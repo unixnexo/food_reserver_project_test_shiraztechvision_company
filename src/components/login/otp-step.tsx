@@ -96,7 +96,7 @@ export function OtpStep({
             className="flex flex-col"
         >
             <div className="mb-12">
-                <h1 className="text-4xl font-bold leading-[1.4] tracking-tight sm:text-5xl">
+                <h1 className="text-4xl font-bold leading-[1.4] tracking-tight">
                     کد تایید را وارد کن
                 </h1>
 
@@ -141,7 +141,7 @@ export function OtpStep({
                                 duration: 0.3,
                                 ease: "easeOut",
                             }}
-                            className="size-14 rounded-2xl border-2 border-border bg-transparent text-center text-2xl font-semibold outline-none transition-colors focus:border-primary sm:size-16 sm:text-3xl"
+                            className="size-14 rounded-2xl border-2 border-border bg-transparent text-center text-2xl font-semibold outline-none transition-colors focus:border-primary"
                         />
                     );
                 })}

@@ -31,7 +31,7 @@ export function PhoneStep({
             className="flex flex-col"
         >
             <div className="mb-12">
-                <h1 className="text-4xl font-bold leading-[1.4] tracking-tight sm:text-5xl">
+                <h1 className="text-4xl font-bold leading-[1.4] tracking-tight">
                     ورود به وعده
                 </h1>
 
@@ -62,7 +62,7 @@ export function PhoneStep({
                         }
                     }}
                     dir="ltr"
-                    className="h-16 w-full border-0 border-b-2 border-border bg-transparent px-0 text-2xl font-medium tracking-wider outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary sm:text-3xl"
+                    className="h-16 w-full border-0 border-b-2 border-border bg-transparent px-0 text-2xl font-medium tracking-wider outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary"
                 />
 
                 <p className="mt-4 text-sm leading-7 text-muted-foreground">

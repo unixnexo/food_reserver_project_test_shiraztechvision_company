@@ -74,6 +74,11 @@ export default async function DashboardPage() {
                             ثبت فرزند جدید
                         </Button>
                     </Link>
+                    {children.length > 0 && (
+                        <Link href="/dashboard/reserve/daily">
+                            <Button className="w-full">رزرو غذای روزانه</Button>
+                        </Link>
+                    )}
                 </CardContent>
             </Card>
         </div>
