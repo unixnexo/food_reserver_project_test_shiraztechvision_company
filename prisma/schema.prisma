@@ -1,0 +1,212 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums ----------
+
+enum Role {
+  PARENT
+  ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum OrderType {
+  DAILY
+  MONTHLY
+}
+
+enum OrderStatus {
+  PENDING   // created, awaiting payment
+  PAID      // payment verified
+  FAILED    // payment failed / cancelled at gateway
+}
+
+enum PortionType {
+  HALF // نیم پرس
+  FULL // تمام پرس
+}
+
+// ---------- Core Auth ----------
+
+model User {
+  id        String   @id @default(cuid())
+  phone     String   @unique // e.g. 09122122121
+  role      Role     @default(PARENT)
+
+  // OTP login fields (single active code per user)
+  otpCode       String?
+  otpExpiresAt  DateTime?
+  otpLastSentAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  children Child[]
+  orders   Order[]
+
+  @@map("users")
+}
+
+// ---------- Reference / Lookup tables ----------
+
+model School {
+  id   String @id @default(cuid())
+  name String @unique
+
+  children Child[]
+
+  @@map("schools")
+}
+
+model Grade {
+  id    String @id @default(cuid())
+  name  String @unique // e.g. "پایه اول ابتدایی"
+  order Int    @unique // 1-12, guarantees dropdown sort order regardless of insertion
+
+  children Child[]
+
+  @@map("grades")
+}
+
+// ---------- Child / Registration ----------
+
+model Child {
+  id           String   @id @default(cuid())
+  firstName    String
+  lastName     String
+  birthDate    DateTime // stored as real Gregorian DateTime, converted to Jalali only in UI
+  nationalCode String   @unique // 10-digit Iranian national code, validated via Zod checksum
+  gender       Gender
+
+  gradeId  String
+  grade    Grade  @relation(fields: [gradeId], references: [id])
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id])
+
+  parentId String
+  parent   User   @relation(fields: [parentId], references: [id])
+
+  orderItems OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([parentId])
+  @@map("children")
+}
+
+// ---------- Menu ----------
+
+model Food {
+  id   String @id @default(cuid())
+  name String @unique
+
+  menuItems MenuItem[]
+
+  createdAt DateTime @default(now())
+
+  @@map("foods")
+}
+
+// A specific food offered on a specific calendar date.
+// A given date can have multiple MenuItem rows (2-3 food choices per day).
+model MenuItem {
+  id     String   @id @default(cuid())
+  date   DateTime // normalized to midnight UTC, represents a single calendar day
+  foodId String
+  food   Food     @relation(fields: [foodId], references: [id])
+
+  orderItems OrderItem[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([date, foodId]) // can't add the same food twice on the same day
+  @@index([date])
+  @@map("menu_items")
+}
+
+// An exception override: a specific date that is closed beyond the
+// default rule (Thursdays/Fridays are always closed).
+// Admin can only ADD closures here, never reopen a default-closed day.
+model ClosedDay {
+  id     String   @id @default(cuid())
+  date   DateTime @unique // normalized to midnight UTC
+  reason String? // optional note for admin's own reference
+
+  createdAt DateTime @default(now())
+
+  @@map("closed_days")
+}
+
+// Single-row settings table for portion pricing (تومن, whole numbers).
+model PortionPricing {
+  id               String   @id @default(cuid())
+  halfPortionPrice Int      // نیم پرس price in تومن
+  fullPortionPrice Int      // تمام پرس price in تومن
+  updatedAt        DateTime @updatedAt
+
+  @@map("portion_pricing")
+}
+
+// ---------- Orders / Payment ----------
+
+model Order {
+  id     String      @id @default(cuid())
+  type   OrderType
+  status OrderStatus @default(PENDING)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  totalAmount Int // sum of all OrderItem prices, in تومن, snapshotted at creation
+
+  // Zarinpal payment tracking
+  paymentAuthority  String? // "Authority" returned by Zarinpal on request
+  paymentRefId      String? // "RefID" returned by Zarinpal on successful verify
+  trackingCode      String? @unique // our own human-friendly code shown to the parent
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("orders")
+}
+
+// One reserved meal for one child on one day.
+model OrderItem {
+  id String @id @default(cuid())
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  childId String
+  child   Child  @relation(fields: [childId], references: [id])
+
+  date DateTime // the calendar day this meal is for
+
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+
+  portionType PortionType
+  unitPrice   Int         // price snapshot at time of order (تومن) — protects historical accuracy
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([childId])
+  @@map("order_items")
+}
