@@ -14,4 +14,6 @@ function requireEnv(key: string): string {
 
 export const env = {
     JWT_SECRET: requireEnv("JWT_SECRET"),
+    ZARINPAL_MERCHANT_ID: requireEnv("ZARINPAL_MERCHANT_ID"),
+    APP_BASE_URL: requireEnv("APP_BASE_URL"),
 };

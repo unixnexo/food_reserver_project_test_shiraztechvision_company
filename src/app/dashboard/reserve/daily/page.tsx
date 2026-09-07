@@ -174,9 +174,21 @@ export default function DailyReservationPage() {
                 toast.error(data.error);
                 return;
             }
-            toast.success("سفارش ثبت شد، در حال انتقال به درگاه پرداخت...");
-            // Step 8 will wire this to the real Zarinpal redirect.
-            router.push(`/dashboard/orders/${data.orderId}`);
+
+            const paymentRes = await fetch("/api/payment/request", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ orderId: data.orderId }),
+            });
+            const paymentData = await paymentRes.json();
+
+            if (!paymentData.success) {
+                toast.error(paymentData.error ?? "خطا در اتصال به درگاه پرداخت");
+                router.push(`/dashboard/orders/${data.orderId}`);
+                return;
+            }
+
+            window.location.href = paymentData.paymentUrl;
         } finally {
             setIsSubmitting(false);
         }
