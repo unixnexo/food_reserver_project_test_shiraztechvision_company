@@ -4,7 +4,7 @@ import { Toaster } from "react-hot-toast";
 import "./globals.css";
 
 const iranSans = localFont({
-  src: "./fonts/iransans.woff2",
+  src: "../fonts/iransans.woff2",
   variable: "--font-iran-sans",
   display: "swap",
 });
