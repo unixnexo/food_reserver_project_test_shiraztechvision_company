@@ -1,84 +1,118 @@
-// app/login/route: /login
-//
-// PAGE PURPOSE (for AI agents / future readers):
-// Single login page handling BOTH login and implicit registration — a
-// phone number becomes a user automatically on first OTP request (see
-// app/api/auth/send-otp/route.ts). This page has two phases, tracked by
-// local component state (no routing change between them):
-//
-//   Phase 1 ("phone"): user enters their phone number, hits "ارسال کد"
-//     → POST /api/auth/send-otp { phone }
-//
-//   Phase 2 ("otp"): user enters the 5-digit code they received
-//     → POST /api/auth/verify-otp { phone, code }
-//     → on success, a session cookie is set by the API route, and this
-//       page redirects to "/dashboard" (middleware will redirect ADMIN
-//       users to "/admin" automatically on their next navigation, but we
-//       route directly based on the API response here for a snappy UX)
-//
-// A resend cooldown (2 minutes) is enforced by the server; this page just
-// displays a countdown for UX and disables the resend button meanwhile.
-// The actual expiry/cooldown rules live server-side and cannot be bypassed
-// by manipulating this page's state.
-//
-// This is intentionally bare-bones styling — full UI/UX pass happens later
-// by another design pass. Structure and data flow are the priority here.
-
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
+import { BackButton } from "@/components/shared/back-button";
+import { PhoneStep } from "@/components/login/phone-step";
+import { OtpStep } from "@/components/login/otp-step";
+
 
 const RESEND_COOLDOWN_SECONDS = 120;
 
 type Phase = "phone" | "otp";
 
+const pageVariants = {
+    initial: {
+        opacity: 0,
+        y: 20,
+    },
+    animate: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            duration: 0.45,
+            ease: "easeOut",
+        },
+    },
+    exit: {
+        opacity: 0,
+        y: -20,
+        transition: {
+            duration: 0.25,
+            ease: "easeIn",
+        },
+    },
+};
+
 export default function LoginPage() {
     const router = useRouter();
+
     const [phase, setPhase] = useState<Phase>("phone");
     const [phone, setPhone] = useState("");
     const [code, setCode] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [cooldown, setCooldown] = useState(0);
+
     const cooldownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         return () => {
-            if (cooldownIntervalRef.current) clearInterval(cooldownIntervalRef.current);
+            if (cooldownIntervalRef.current) {
+                clearInterval(cooldownIntervalRef.current);
+            }
         };
     }, []);
 
     function startCooldown() {
+        if (cooldownIntervalRef.current) {
+            clearInterval(cooldownIntervalRef.current);
+        }
+
         setCooldown(RESEND_COOLDOWN_SECONDS);
+
         cooldownIntervalRef.current = setInterval(() => {
             setCooldown((prev) => {
                 if (prev <= 1) {
-                    if (cooldownIntervalRef.current) clearInterval(cooldownIntervalRef.current);
+                    if (cooldownIntervalRef.current) {
+                        clearInterval(cooldownIntervalRef.current);
+                    }
+
                     return 0;
                 }
+
                 return prev - 1;
             });
         }, 1000);
     }
 
+    function normalizePhone(value: string) {
+        return value.replace(/\D/g, "").slice(0, 11);
+    }
+
+    function isValidPhone(value: string) {
+        return /^09\d{9}$/.test(value);
+    }
+
+    function formatPhone(value: string) {
+        return value.replace(/(\d{4})(\d{3})(\d{4})/, "$1 $2 $3");
+    }
+
+    function formatCooldown(seconds: number) {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+
+        return `${minutes}:${remainingSeconds
+            .toString()
+            .padStart(2, "0")}`;
+    }
+
     async function handleSendOtp() {
+        if (!isValidPhone(phone)) return;
+
         setIsSubmitting(true);
+
         try {
             const res = await fetch("/api/auth/send-otp", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                },
                 body: JSON.stringify({ phone }),
             });
+
             const data = await res.json();
 
             if (!data.success) {
@@ -87,6 +121,7 @@ export default function LoginPage() {
             }
 
             toast.success("کد تایید ارسال شد");
+
             setPhase("otp");
             startCooldown();
         } catch {
@@ -97,22 +132,34 @@ export default function LoginPage() {
     }
 
     async function handleVerifyOtp() {
+        if (code.length !== 5) return;
+
         setIsSubmitting(true);
+
         try {
             const res = await fetch("/api/auth/verify-otp", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ phone, code }),
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    phone,
+                    code,
+                }),
             });
+
             const data = await res.json();
 
             if (!data.success) {
-                toast.error(data.error ?? "خطایی رخ داد");
+                toast.error(data.error ?? "کدی که وارد کردی درست نیست");
                 return;
             }
 
             toast.success("ورود موفقیت‌آمیز بود");
-            router.push(data.role === "ADMIN" ? "/admin" : "/dashboard");
+
+            router.push(
+                data.role === "ADMIN" ? "/admin" : "/dashboard"
+            );
         } catch {
             toast.error("خطا در ارتباط با سرور");
         } finally {
@@ -120,70 +167,50 @@ export default function LoginPage() {
         }
     }
 
-    return (
-        <div className="flex flex-1 items-center justify-center p-4">
-            <Card className="w-full max-w-sm">
-                <CardHeader>
-                    <CardTitle>ورود به سامانه</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-4">
-                    {phase === "phone" && (
-                        <>
-                            <div className="flex flex-col gap-2">
-                                <Label htmlFor="phone">شماره موبایل</Label>
-                                <Input
-                                    id="phone"
-                                    type="tel"
-                                    placeholder="09121234567"
-                                    value={phone}
-                                    onChange={(e) => setPhone(e.target.value)}
-                                    dir="ltr"
-                                />
-                            </div>
-                            <Button onClick={handleSendOtp} disabled={isSubmitting || !phone}>
-                                ارسال کد تایید
-                            </Button>
-                        </>
-                    )}
+    function handleChangePhone() {
+        setCode("");
+        setPhase("phone");
+    }
 
-                    {phase === "otp" && (
-                        <>
-                            <div className="flex flex-col gap-2">
-                                <Label htmlFor="code">کد تایید</Label>
-                                <Input
-                                    id="code"
-                                    type="text"
-                                    inputMode="numeric"
-                                    placeholder="12345"
-                                    value={code}
-                                    onChange={(e) => setCode(e.target.value)}
-                                    dir="ltr"
-                                    maxLength={5}
-                                />
-                            </div>
-                            <Button onClick={handleVerifyOtp} disabled={isSubmitting || code.length !== 5}>
-                                تایید و ورود
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                onClick={handleSendOtp}
-                                disabled={isSubmitting || cooldown > 0}
-                            >
-                                {cooldown > 0
-                                    ? `ارسال مجدد کد (${cooldown} ثانیه)`
-                                    : "ارسال مجدد کد"}
-                            </Button>
-                            <button
-                                type="button"
-                                className="text-sm text-muted-foreground underline"
-                                onClick={() => setPhase("phone")}
-                            >
-                                ویرایش شماره موبایل
-                            </button>
-                        </>
-                    )}
-                </CardContent>
-            </Card>
-        </div>
+    return (
+        <main className="min-h-screen bg-background">
+            <div className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 pb-10 pt-6 sm:px-10">
+                {/* Back */}
+                <BackButton />
+
+                {/* Content */}
+                <div className="flex flex-1 flex-col justify-center pb-16 pt-4">
+                    <AnimatePresence mode="wait">
+                        {phase === "phone" ? (
+                            <PhoneStep
+                                key="phone"
+                                phone={phone}
+                                isSubmitting={isSubmitting}
+                                onPhoneChange={(value) =>
+                                    setPhone(normalizePhone(value))
+                                }
+                                onSubmit={handleSendOtp}
+                                variants={pageVariants}
+                            />
+                        ) : (
+                            <OtpStep
+                                key="otp"
+                                phone={phone}
+                                code={code}
+                                isSubmitting={isSubmitting}
+                                cooldown={cooldown}
+                                onCodeChange={setCode}
+                                onSubmit={handleVerifyOtp}
+                                onResend={handleSendOtp}
+                                onChangePhone={handleChangePhone}
+                                formatPhone={formatPhone}
+                                formatCooldown={formatCooldown}
+                                variants={pageVariants}
+                            />
+                        )}
+                    </AnimatePresence>
+                </div>
+            </div>
+        </main>
     );
 }
