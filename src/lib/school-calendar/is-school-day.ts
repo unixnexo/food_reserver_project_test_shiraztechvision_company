@@ -67,3 +67,28 @@ export function isSchoolDaySync(
     if (isWeekendByDefault(normalized)) return false;
     return !closedDates.has(normalized.toISOString().split("T")[0]);
 }
+
+/**
+ * Returns every school day (as Date objects, midnight UTC) within
+ * [start, end] inclusive. Used by the MONTHLY reservation flow to
+ * auto-select "all school days in next month" — there is no manual
+ * day-by-day picking in that flow, unlike DAILY reservation.
+ */
+export function getSchoolDaysInRange(
+    start: Date,
+    end: Date,
+    closedDates: Set<string>
+): Date[] {
+    const days: Date[] = [];
+    const cursor = toDateOnly(start);
+    const normalizedEnd = toDateOnly(end);
+
+    while (cursor.getTime() <= normalizedEnd.getTime()) {
+        if (isSchoolDaySync(cursor, closedDates)) {
+            days.push(new Date(cursor));
+        }
+        cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+
+    return days;
+}

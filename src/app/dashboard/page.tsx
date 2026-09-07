@@ -79,6 +79,13 @@ export default async function DashboardPage() {
                             <Button className="w-full">رزرو غذای روزانه</Button>
                         </Link>
                     )}
+                    {children.length > 0 && (
+                        <Link href="/dashboard/reserve/monthly">
+                            <Button variant="secondary" className="w-full">
+                                رزرو غذای ماهانه
+                            </Button>
+                        </Link>
+                    )}
                 </CardContent>
             </Card>
         </div>
