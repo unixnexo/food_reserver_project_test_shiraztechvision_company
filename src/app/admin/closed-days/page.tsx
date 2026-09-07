@@ -141,6 +141,7 @@ export default function AdminClosedDaysPage() {
             <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start">
                 {/* Add closed day */}
                 <ClosedDayForm
+                    closedDays={closedDays}
                     onSubmit={handleAddClosure}
                     isSubmitting={isSubmitting}
                 />

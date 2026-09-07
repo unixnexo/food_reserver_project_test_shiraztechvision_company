@@ -5,13 +5,16 @@ import { CalendarDays, Loader2 } from "lucide-react";
 
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
+import { ClosedDay } from "@/app/admin/closed-days/page";
 
 type ClosedDayFormProps = {
+    closedDays: ClosedDay[];
     onSubmit: (date: Date) => Promise<void>;
     isSubmitting: boolean;
 };
 
 export function ClosedDayForm({
+    closedDays,
     onSubmit,
     isSubmitting,
 }: ClosedDayFormProps) {
@@ -34,6 +37,26 @@ export function ClosedDayForm({
         setSelectedDate(today);
     }
 
+
+    const closedDateSet = new Set(
+        closedDays.map((day) => day.date.split("T")[0])
+    );
+
+    function isOffDay(date: Date) {
+        const dayOfWeek = date.getDay();
+
+        // Thursday and Friday are always off
+        if (dayOfWeek === 4 || dayOfWeek === 5) {
+            return true;
+        }
+
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+
+        return closedDateSet.has(`${year}-${month}-${day}`);
+    }
+
     return (
         <section className="rounded-3xl border border-border/70 bg-background p-4 shadow-sm sm:p-6">
             <div className="mb-5 flex items-center gap-3">
@@ -53,12 +76,24 @@ export function ClosedDayForm({
             </div>
 
             <div className="flex justify-center">
+                {/* <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    month={month}
+                    onMonthChange={setMonth}
+                    className="rounded-2xl border-0 p-0"
+                /> */}
+
                 <Calendar
                     mode="single"
                     selected={selectedDate}
                     onSelect={setSelectedDate}
                     month={month}
                     onMonthChange={setMonth}
+                    modifiers={{
+                        offDay: isOffDay,
+                    }}
                     className="rounded-2xl border-0 p-0"
                 />
             </div>
