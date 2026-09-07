@@ -1,106 +1,194 @@
-// src/app/admin/foods/page.tsx
-//
-// PAGE PURPOSE (for AI agents / future readers):
-// Admin manages the food bank — the reusable list of dishes assigned to
-// specific menu days on the "تعریف منو" page (/admin/menu). Simple
-// list + add-form + delete. Deletion is blocked server-side if the food
-// is already used in any MenuItem (see /api/admin/foods/[id]).
-//
-// DATA SHAPE: Food = { id: string, name: string }
-
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Loader2, UtensilsCrossed } from "lucide-react";
 import toast from "react-hot-toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-type Food = { id: string; name: string };
+import { FoodForm } from "@/components/admin/foods/food-form";
+import { FoodList } from "@/components/admin/foods/food-list";
+import { FoodSearch } from "@/components/admin/foods/food-search";
+import { DeleteFoodDialog } from "@/components/admin/foods/delete-food-dialog";
+
+type Food = {
+    id: string;
+    name: string;
+};
 
 export default function AdminFoodsPage() {
     const [foods, setFoods] = useState<Food[]>([]);
-    const [newFoodName, setNewFoodName] = useState("");
+    const [search, setSearch] = useState("");
+    const [selectedFood, setSelectedFood] = useState<Food | null>(null);
+
+    const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     async function loadFoods() {
-        const res = await fetch("/api/admin/foods");
-        const data = await res.json();
-        if (data.success) setFoods(data.foods);
+        try {
+            setIsLoading(true);
+
+            const res = await fetch("/api/admin/foods");
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                toast.error(data.error || "خطا در دریافت غذاها");
+                return;
+            }
+
+            setFoods(data.foods);
+        } catch {
+            toast.error("خطا در ارتباط با سرور");
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     useEffect(() => {
         loadFoods();
     }, []);
 
-    async function handleAdd() {
-        if (!newFoodName.trim()) return;
+    async function handleAdd(name: string) {
         setIsSubmitting(true);
+
         try {
             const res = await fetch("/api/admin/foods", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: newFoodName.trim() }),
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ name }),
             });
+
             const data = await res.json();
-            if (!data.success) {
-                toast.error(data.error);
+
+            if (!res.ok || !data.success) {
+                toast.error(data.error || "افزودن غذا انجام نشد");
                 return;
             }
-            toast.success("غذا اضافه شد");
-            setNewFoodName("");
-            loadFoods();
+
+            toast.success("غذا با موفقیت اضافه شد");
+            await loadFoods();
+        } catch {
+            toast.error("خطا در ارتباط با سرور");
         } finally {
             setIsSubmitting(false);
         }
     }
 
-    async function handleDelete(id: string) {
-        const res = await fetch(`/api/admin/foods/${id}`, { method: "DELETE" });
-        const data = await res.json();
-        if (!data.success) {
-            toast.error(data.error);
-            return;
+    async function handleDelete() {
+        if (!selectedFood) return;
+
+        setIsDeleting(true);
+
+        try {
+            const res = await fetch(
+                `/api/admin/foods/${selectedFood.id}`,
+                {
+                    method: "DELETE",
+                }
+            );
+
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                toast.error(data.error || "حذف غذا انجام نشد");
+                return;
+            }
+
+            toast.success("غذا با موفقیت حذف شد");
+            setSelectedFood(null);
+            await loadFoods();
+        } catch {
+            toast.error("خطا در ارتباط با سرور");
+        } finally {
+            setIsDeleting(false);
         }
-        toast.success("غذا حذف شد");
-        loadFoods();
     }
 
+    const filteredFoods = useMemo(() => {
+        const normalizedSearch = search.trim().toLocaleLowerCase("fa");
+
+        if (!normalizedSearch) return foods;
+
+        return foods.filter((food) =>
+            food.name.toLocaleLowerCase("fa").includes(normalizedSearch)
+        );
+    }, [foods, search]);
+
     return (
-        <Card className="max-w-lg">
-            <CardHeader>
-                <CardTitle>بانک غذا</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-                <div className="flex gap-2">
-                    <Input
-                        placeholder="نام غذا"
-                        value={newFoodName}
-                        onChange={(e) => setNewFoodName(e.target.value)}
-                    />
-                    <Button onClick={handleAdd} disabled={isSubmitting}>
-                        افزودن
-                    </Button>
+        <div className="mx-auto w-full max-w-3xl">
+            {/* Page heading */}
+            <div className="mb-8">
+                <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-[#EAF3ED] text-[#183D2B]">
+                    <UtensilsCrossed className="size-6" />
                 </div>
 
-                <div className="flex flex-col gap-2">
-                    {foods.map((food) => (
-                        <div
-                            key={food.id}
-                            className="flex items-center justify-between border rounded-md p-2 text-sm"
-                        >
-                            <span>{food.name}</span>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDelete(food.id)}
-                            >
-                                حذف
-                            </Button>
-                        </div>
-                    ))}
+                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                    بانک غذا
+                </h1>
+
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    غذاهای قابل استفاده در منوهای مدرسه را مدیریت کنید.
+                </p>
+            </div>
+
+            {/* Add food */}
+            <section className="mb-6 rounded-3xl border border-border/70 bg-background p-4 shadow-sm sm:p-6">
+                <div className="mb-4">
+                    <h2 className="text-base font-semibold">
+                        افزودن غذای جدید
+                    </h2>
+
+                    <p className="mt-1 text-xs text-muted-foreground">
+                        نام غذا را وارد کنید تا به بانک غذا اضافه شود.
+                    </p>
                 </div>
-            </CardContent>
-        </Card>
+
+                <FoodForm
+                    isSubmitting={isSubmitting}
+                    onAdd={handleAdd}
+                />
+            </section>
+
+            {/* Food list */}
+            <section className="rounded-3xl border border-border/70 bg-background p-4 shadow-sm sm:p-6">
+                <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 className="text-base font-semibold">
+                            غذاهای ثبت‌شده
+                        </h2>
+
+                        <p className="mt-1 text-xs text-muted-foreground">
+                            {foods.length} غذا در بانک غذا
+                        </p>
+                    </div>
+
+                    <div className="w-full sm:max-w-xs">
+                        <FoodSearch
+                            value={search}
+                            onChange={setSearch}
+                        />
+                    </div>
+                </div>
+
+                {isLoading ? (
+                    <div className="flex items-center justify-center py-16">
+                        <Loader2 className="size-6 animate-spin text-[#183D2B]" />
+                    </div>
+                ) : (
+                    <FoodList
+                        foods={filteredFoods}
+                        onDelete={setSelectedFood}
+                    />
+                )}
+            </section>
+
+            <DeleteFoodDialog
+                food={selectedFood}
+                isDeleting={isDeleting}
+                onClose={() => setSelectedFood(null)}
+                onConfirm={handleDelete}
+            />
+        </div>
     );
 }
