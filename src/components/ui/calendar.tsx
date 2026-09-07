@@ -2,8 +2,16 @@
 
 import * as React from "react"
 import { cn } from "cn"
+// import {
+//   DayPicker,
+//   getDefaultClassNames,
+//   type DayButton,
+//   type Locale,
+// } from "react-day-picker/persian"
+
+import { DayPicker } from "@daypicker/persian"
+
 import {
-  DayPicker,
   getDefaultClassNames,
   type DayButton,
   type Locale,
@@ -118,8 +126,13 @@ function Calendar({
           "relative isolate z-0 rounded-r-(--cell-radius) bg-muted after:absolute after:inset-y-0 after:left-0 after:w-4 after:bg-muted",
           defaultClassNames.range_end
         ),
+        // today: cn(
+        //   "rounded-(--cell-radius) bg-muted text-foreground data-[selected=true]:rounded-none",
+        //   defaultClassNames.today
+        // ),
         today: cn(
-          "rounded-(--cell-radius) bg-muted text-foreground data-[selected=true]:rounded-none",
+          "rounded-(--cell-radius) bg-[#EAF3ED] text-[#183D2B] font-bold",
+          "data-[selected-single=true]:bg-[#183D2B] data-[selected-single=true]:text-white",
           defaultClassNames.today
         ),
         outside: cn(
