@@ -1,136 +1,191 @@
-// src/app/admin/closed-days/page.tsx
-//
-// PAGE PURPOSE (for AI agents / future readers):
-// "روزهای تعطیل" — admin marks EXTRA closed dates beyond the default
-// Thursday/Friday closure (see lib/school-calendar/is-school-day.ts).
-// Picking an already-default-closed Thu/Fri is rejected server-side with
-// a clear message, since it would be redundant. There is no "reopen a
-// Thursday" feature — admin can only add closures, never remove the
-// default rule.
-//
-// DATA FLOW:
-// - Calendar picks a date → POST /api/admin/closed-days
-// - List of all closures loaded via GET /api/admin/closed-days
-// - Each row has a "حذف" (remove) button → DELETE /api/admin/closed-days/[id],
-//   which reopens that date as a normal school day.
-
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { CalendarDays, CalendarX2 } from "lucide-react";
 import toast from "react-hot-toast";
-import { Calendar } from "@/components/ui/calendar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-type ClosedDay = { id: string; date: string; reason: string | null };
+import { ClosedDayForm } from "@/components/admin/closed-days/closed-day-form";
+import { ClosedDayList } from "@/components/admin/closed-days/closed-day-list";
+import { DeleteClosedDayDialog } from "@/components/admin/closed-days/delete-closed-day-dialog";
+
+export type ClosedDay = {
+    id: string;
+    date: string;
+    reason: string | null;
+};
 
 function toDateParam(date: Date): string {
-    return date.toISOString().split("T")[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
 }
 
 export default function AdminClosedDaysPage() {
-    const [selectedDate, setSelectedDate] = useState<Date | undefined>();
-    const [reason, setReason] = useState("");
     const [closedDays, setClosedDays] = useState<ClosedDay[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedClosedDay, setSelectedClosedDay] =
+        useState<ClosedDay | null>(null);
+
+    const [deletingId, setDeletingId] = useState<string | null>(null);
 
     async function loadClosedDays() {
-        const res = await fetch("/api/admin/closed-days");
-        const data = await res.json();
-        if (data.success) setClosedDays(data.closedDays);
+        try {
+            setIsLoading(true);
+
+            const res = await fetch("/api/admin/closed-days");
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                toast.error(data.error || "خطا در دریافت روزهای تعطیل");
+                return;
+            }
+
+            setClosedDays(data.closedDays);
+        } catch {
+            toast.error("خطا در ارتباط با سرور");
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     useEffect(() => {
         loadClosedDays();
     }, []);
 
-    async function handleAddClosure() {
-        if (!selectedDate) return;
-        const res = await fetch("/api/admin/closed-days", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                date: toDateParam(selectedDate),
-                reason: reason.trim() || undefined,
-            }),
-        });
-        const data = await res.json();
-        if (!data.success) {
-            toast.error(data.error);
-            return;
+    async function handleAddClosure(
+        selectedDate: Date,
+    ) {
+        setIsSubmitting(true);
+
+        try {
+            const res = await fetch("/api/admin/closed-days", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    date: toDateParam(selectedDate),
+                }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                toast.error(data.error || "ثبت تعطیلی انجام نشد");
+                return;
+            }
+
+            toast.success("روز مورد نظر تعطیل شد");
+
+            await loadClosedDays();
+        } catch {
+            toast.error("خطا در ارتباط با سرور");
+        } finally {
+            setIsSubmitting(false);
         }
-        toast.success("روز مورد نظر تعطیل شد");
-        setSelectedDate(undefined);
-        setReason("");
-        loadClosedDays();
     }
 
-    async function handleRemoveClosure(id: string) {
-        const res = await fetch(`/api/admin/closed-days/${id}`, {
-            method: "DELETE",
-        });
-        const data = await res.json();
-        if (!data.success) {
-            toast.error(data.error);
-            return;
+    async function handleRemoveClosure() {
+        if (!selectedClosedDay) return;
+
+        const id = selectedClosedDay.id;
+
+        setDeletingId(id);
+
+        try {
+            const res = await fetch(`/api/admin/closed-days/${id}`, {
+                method: "DELETE",
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                toast.error(data.error || "حذف تعطیلی انجام نشد");
+                return;
+            }
+
+            toast.success("روز مجدداً باز شد");
+
+            setSelectedClosedDay(null);
+            await loadClosedDays();
+        } catch {
+            toast.error("خطا در ارتباط با سرور");
+        } finally {
+            setDeletingId(null);
         }
-        toast.success("روز مجددا باز شد");
-        loadClosedDays();
     }
 
     return (
-        <div className="flex flex-wrap gap-4">
-            <Card>
-                <CardHeader>
-                    <CardTitle>افزودن روز تعطیل</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-4">
-                    <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={setSelectedDate}
-                    />
-                    <Input
-                        placeholder="دلیل (اختیاری)"
-                        value={reason}
-                        onChange={(e) => setReason(e.target.value)}
-                    />
-                    <Button onClick={handleAddClosure} disabled={!selectedDate}>
-                        ثبت تعطیلی
-                    </Button>
-                </CardContent>
-            </Card>
+        <div className="mx-auto w-full max-w-6xl">
+            {/* Heading */}
+            <div className="mb-8">
+                <div className="mb-2 flex items-center gap-3">
+                    <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-[#EAF3ED] text-[#183D2B]">
+                        <CalendarX2 className="size-6" />
+                    </div>
 
-            <Card className="flex-1 min-w-[300px]">
-                <CardHeader>
-                    <CardTitle>روزهای تعطیل ثبت شده</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-2">
-                    {closedDays.length === 0 && (
-                        <p className="text-sm text-muted-foreground">
-                            هیچ روز تعطیل اضافه‌ای ثبت نشده است.
-                        </p>
-                    )}
-                    {closedDays.map((cd) => (
-                        <div
-                            key={cd.id}
-                            className="flex items-center justify-between border rounded-md p-2 text-sm"
-                        >
-                            <span>
-                                {cd.date.split("T")[0]}
-                                {cd.reason ? ` — ${cd.reason}` : ""}
-                            </span>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveClosure(cd.id)}
-                            >
-                                حذف
-                            </Button>
+                    <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                        روزهای تعطیل
+                    </h1>
+                </div>
+
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    روزهای تعطیل اضافه را مشخص کنید. پنجشنبه و جمعه به‌صورت
+                    پیش‌فرض تعطیل هستند.
+                </p>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start">
+                {/* Add closed day */}
+                <ClosedDayForm
+                    onSubmit={handleAddClosure}
+                    isSubmitting={isSubmitting}
+                />
+
+                {/* Closed days */}
+                <section className="rounded-3xl border border-border/70 bg-background p-4 shadow-sm sm:p-6">
+                    <div className="mb-6 flex items-start gap-3">
+                        <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[#EAF3ED] text-[#183D2B]">
+                            <CalendarDays className="size-5" />
                         </div>
-                    ))}
-                </CardContent>
-            </Card>
+
+                        <div className="min-w-0">
+                            <h2 className="text-base font-semibold">
+                                تعطیلات ثبت شده
+                            </h2>
+
+                            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                                روزهایی که به‌صورت دستی تعطیل شده‌اند.
+                            </p>
+                        </div>
+                    </div>
+
+                    <ClosedDayList
+                        closedDays={closedDays}
+                        isLoading={isLoading}
+                        deletingId={deletingId}
+                        onDelete={(id) => {
+                            const day = closedDays.find((item) => item.id === id);
+
+                            if (day) {
+                                setSelectedClosedDay(day);
+                            }
+                        }}
+                    />
+
+                </section>
+            </div>
+
+            <DeleteClosedDayDialog
+                date={selectedClosedDay?.date ?? null}
+                isDeleting={Boolean(deletingId)}
+                onClose={() => setSelectedClosedDay(null)}
+                onConfirm={handleRemoveClosure}
+            />
+
         </div>
     );
 }
