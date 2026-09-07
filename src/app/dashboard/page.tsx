@@ -86,6 +86,11 @@ export default async function DashboardPage() {
                             </Button>
                         </Link>
                     )}
+                    <Link href="/dashboard/history">
+                        <Button variant="ghost" className="w-full">
+                            تاریخچه رزروها
+                        </Button>
+                    </Link>
                 </CardContent>
             </Card>
         </div>
