@@ -1,20 +1,14 @@
-// src/app/dashboard/history/page.tsx
-//
-// PAGE PURPOSE (for AI agents / future readers):
-// Parent's own reservation/order history, sourced from
-// GET /api/reports/my-reservations (already calendar-ready: one row per
-// reserved day, across all children and orders). This page groups those
-// rows by date for a simple list view — the eventual design pass should
-// feed the SAME API response directly into a Persian calendar component
-// instead of this grouped-list rendering; no API changes needed for that
-// swap.
-
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useState } from "react";
 
-type Reservation = {
+import { HistoryHeader } from "@/components/dashboard/history/history-header";
+import { ReservationHistoryList } from "@/components/dashboard/history/reservation-history-list";
+import { ReservationHistoryEmpty } from "@/components/dashboard/history/reservation-history-empty";
+import { ReservationHistorySkeleton } from "@/components/dashboard/history/reservation-history-skeleton";
+import { BackButton } from "@/components/shared/back-button";
+
+export type Reservation = {
     date: string;
     childId: string;
     childName: string;
@@ -27,81 +21,71 @@ type Reservation = {
     orderPlacedAt: string;
 };
 
-const STATUS_LABELS: Record<Reservation["orderStatus"], string> = {
-    PENDING: "در انتظار پرداخت",
-    PAID: "پرداخت شده",
-    FAILED: "ناموفق",
-};
-
 export default function HistoryPage() {
     const [reservations, setReservations] = useState<Reservation[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [hasError, setHasError] = useState(false);
 
     useEffect(() => {
-        fetch("/api/reports/my-reservations")
-            .then((res) => res.json())
-            .then((data) => {
-                if (data.success) setReservations(data.reservations);
-            })
-            .finally(() => setIsLoading(false));
+        async function loadReservations() {
+            try {
+                const res = await fetch("/api/reports/my-reservations");
+
+                if (!res.ok) {
+                    throw new Error("Failed to fetch reservations");
+                }
+
+                const data = await res.json();
+
+                if (data.success) {
+                    setReservations(data.reservations);
+                } else {
+                    throw new Error("Failed to load reservations");
+                }
+            } catch {
+                setHasError(true);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+
+        loadReservations();
     }, []);
 
-    const groupedByDate = reservations.reduce<Record<string, Reservation[]>>(
-        (groups, r) => {
-            (groups[r.date] ??= []).push(r);
-            return groups;
-        },
-        {}
-    );
-
-    const dates = Object.keys(groupedByDate).sort();
-
     return (
-        <div className="p-4 max-w-2xl mx-auto w-full flex flex-col gap-4">
-            <h1 className="text-lg font-bold">تاریخچه رزروها</h1>
+        <div className="min-h-dvh bg-[#F7F5F0]" dir="rtl">
+            {/* <HistoryHeader /> */}
 
-            {isLoading && <p className="text-sm text-muted-foreground">در حال بارگذاری...</p>}
+            <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
+                <div className="mb-6 sm:mb-8">
 
-            {!isLoading && dates.length === 0 && (
-                <p className="text-sm text-muted-foreground">هنوز رزروی ثبت نشده است.</p>
-            )}
+                    <div className="mb-2 flex items-center gap-3">
+                        <BackButton />
+                        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                            تاریخچه رزروها
+                        </h1>
+                    </div>
 
-            {dates.map((date) => (
-                <Card key={date}>
-                    <CardHeader>
-                        <CardTitle className="text-sm">{date}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-2">
-                        {groupedByDate[date].map((r, index) => (
-                            <div
-                                key={`${r.orderId}-${index}`}
-                                className="flex justify-between items-center border-b pb-2 text-sm last:border-b-0 last:pb-0"
-                            >
-                                <div>
-                                    <div className="font-medium">{r.childName}</div>
-                                    <div className="text-muted-foreground">
-                                        {r.foodName} ({r.portionType === "HALF" ? "نیم پرس" : "تمام پرس"})
-                                    </div>
-                                </div>
-                                <div className="text-left">
-                                    <div>{r.amount.toLocaleString()} تومن</div>
-                                    <div
-                                        className={
-                                            r.orderStatus === "PAID"
-                                                ? "text-green-600"
-                                                : r.orderStatus === "FAILED"
-                                                    ? "text-red-600"
-                                                    : "text-muted-foreground"
-                                        }
-                                    >
-                                        {STATUS_LABELS[r.orderStatus]}
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </CardContent>
-                </Card>
-            ))}
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
+                        رزروهای غذایی فرزندانت را اینجا ببین.
+                    </p>
+                </div>
+
+                {isLoading ? (
+                    <ReservationHistorySkeleton />
+                ) : hasError ? (
+                    <div className="rounded-3xl border border-red-200 bg-background px-5 py-10 text-center">
+                        <p className="text-sm text-red-600">
+                            دریافت تاریخچه رزروها با خطا مواجه شد.
+                        </p>
+                    </div>
+                ) : reservations.length === 0 ? (
+                    <ReservationHistoryEmpty />
+                ) : (
+                    <ReservationHistoryList reservations={reservations} />
+                )}
+            </main>
         </div>
     );
 }
+
