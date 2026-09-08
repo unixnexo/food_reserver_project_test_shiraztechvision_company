@@ -96,11 +96,11 @@ export function OtpStep({
             className="flex flex-col"
         >
             <div className="mb-12">
-                <h1 className="text-4xl font-bold leading-[1.4] tracking-tight">
+                <h1 className="text-3xl font-bold leading-[1.4] tracking-tight">
                     کد تایید را وارد کن
                 </h1>
 
-                <p className="mt-4 text-lg leading-8 text-muted-foreground">
+                <p className="mt-4 text-base leading-7 text-muted-foreground">
                     کد ارسال‌شده به{" "}
                     <span className="font-medium text-foreground" dir="ltr">
                         {formatPhone(phone)}
@@ -110,7 +110,7 @@ export function OtpStep({
             </div>
 
             {/* OTP inputs */}
-            <div className="flex justify-center gap-3 sm:gap-4" dir="ltr">
+            <div className="flex justify-center gap-3" dir="ltr">
                 {Array.from({ length: 5 }).map((_, index) => {
                     const isFilled = Boolean(code[index]);
 
@@ -141,7 +141,7 @@ export function OtpStep({
                                 duration: 0.3,
                                 ease: "easeOut",
                             }}
-                            className="size-14 rounded-2xl border-2 border-border bg-transparent text-center text-2xl font-semibold outline-none transition-colors focus:border-primary"
+                            className="size-12 rounded-2xl border-2 border-border bg-transparent text-center text-xl font-semibold outline-none transition-colors focus:border-primary"
                         />
                     );
                 })}
@@ -151,7 +151,7 @@ export function OtpStep({
                 type="button"
                 onClick={onSubmit}
                 disabled={!isComplete || isSubmitting}
-                className="mt-10 h-16 w-full rounded-full text-lg font-semibold"
+                className="mt-10 h-14 w-full rounded-full text-base font-semibold"
             >
                 {isSubmitting ? "در حال بررسی..." : "تایید و ورود"}
 

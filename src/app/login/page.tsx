@@ -174,7 +174,7 @@ export default function LoginPage() {
 
     return (
         <main className="min-h-screen bg-background">
-            <div className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 pb-10 pt-6 sm:px-10">
+            <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 pb-10 pt-6">
                 {/* Back */}
                 <BackButton />
 

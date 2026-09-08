@@ -31,11 +31,11 @@ export function PhoneStep({
             className="flex flex-col"
         >
             <div className="mb-12">
-                <h1 className="text-4xl font-bold leading-[1.4] tracking-tight">
+                <h1 className="text-3xl font-bold leading-[1.4] tracking-tight">
                     ورود به وعده
                 </h1>
 
-                <p className="mt-4 text-lg leading-8 text-muted-foreground">
+                <p className="mt-4 text-base leading-7 text-muted-foreground">
                     با شماره موبایلت وارد شو
                 </p>
             </div>
@@ -62,7 +62,7 @@ export function PhoneStep({
                         }
                     }}
                     dir="ltr"
-                    className="h-16 w-full border-0 border-b-2 border-border bg-transparent px-0 text-2xl font-medium tracking-wider outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary"
+                    className="h-14 w-full border-0 border-b-2 border-border bg-transparent px-0 text-xl font-medium tracking-wider outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary"
                 />
 
                 <p className="mt-4 text-sm leading-7 text-muted-foreground">
@@ -74,7 +74,7 @@ export function PhoneStep({
                 type="button"
                 onClick={onSubmit}
                 disabled={!isValid || isSubmitting}
-                className="mt-10 h-16 w-full rounded-full text-lg font-semibold"
+                className="mt-10 h-14 w-full rounded-full text-base font-semibold"
             >
                 {isSubmitting ? "در حال ارسال..." : "ادامه"}
 
