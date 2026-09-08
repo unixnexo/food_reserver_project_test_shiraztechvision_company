@@ -46,6 +46,7 @@ export default function AdminMenuPage() {
     const [allFoods, setAllFoods] = useState<Food[]>([]);
     const [dayMenuItems, setDayMenuItems] = useState<MenuItem[]>([]);
     const [selectedFoodId, setSelectedFoodId] = useState("");
+    const [menuRefreshKey, setMenuRefreshKey] = useState(0);
 
     const [isLoading, setIsLoading] = useState(true);
     const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
@@ -148,6 +149,7 @@ export default function AdminMenuPage() {
             toast.success("غذا به منو اضافه شد");
             setSelectedFoodId("");
             await loadDayMenu(selectedDate);
+            setMenuRefreshKey((k) => k + 1);
         } catch {
             toast.error("خطا در ارتباط با سرور");
         } finally {
@@ -178,6 +180,7 @@ export default function AdminMenuPage() {
             toast.success("غذا از منو حذف شد");
             setSelectedMenuItem(null);
             await loadDayMenu(selectedDate);
+            setMenuRefreshKey((k) => k + 1);
         } catch {
             toast.error("خطا در ارتباط با سرور");
         } finally {
@@ -225,6 +228,7 @@ export default function AdminMenuPage() {
                         if (date) setSelectedDate(date);
                     }}
                     closedDays={closedDays}
+                    refreshKey={menuRefreshKey}
                 />
 
                 {/* Day menu */}
