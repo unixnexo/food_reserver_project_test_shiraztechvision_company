@@ -1,51 +1,17 @@
-// src/app/dashboard/register-child/page.tsx
-//
-// PAGE PURPOSE (for AI agents / future readers):
-// Form for a logged-in parent to register a child. Requires an active
-// session (enforced by middleware.ts — unauthenticated users are
-// redirected to /login before this page ever renders).
-//
-// DATA FLOW:
-// - On mount, fetches GET /api/schools and GET /api/grades to populate
-//   the two dropdowns.
-// - Birthdate is collected via 3 plain <select> dropdowns (day/month/year)
-//   in the Jalali calendar, then converted to a Gregorian Date client-side
-//   (see lib/date/jalali.ts) before being sent to the API — the API always
-//   receives/stores Gregorian dates.
-// - On submit, POSTs to /api/children with the full child payload.
-//
-// TWO SUBMIT BUTTONS (per product decision):
-//   "ذخیره" (Save)                → submits, then redirects to /dashboard
-//   "ذخیره و افزودن فرزند دیگر"   → submits, then RESETS the form in place
-//                                    (same page) so the parent can register
-//                                    another child immediately. Under the
-//                                    hood both buttons hit the exact same
-//                                    API endpoint — the only difference is
-//                                    what happens client-side after a
-//                                    successful response.
-//
-// This is intentionally bare-bones styling — full UI/UX pass happens later.
-
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
-import {
-    PERSIAN_MONTH_NAMES,
-    jalaliToGregorian,
-    jalaliMonthLength,
-    getBirthYearRange,
-} from "@/lib/date/jalali";
+
+import { PageHeader } from "@/components/dashboard/register-child/page-header";
+import { NameFields } from "@/components/dashboard/register-child/name-fields";
+import { NationalCodeField } from "@/components/dashboard/register-child/national-code-field";
+import { GenderField } from "@/components/dashboard/register-child/gender-field";
+import { BirthDateField } from "@/components/dashboard/register-child/birth-date-field";
+import { SchoolGradeFields } from "@/components/dashboard/register-child/school-grade-fields";
+import { SubmitActions } from "@/components/dashboard/register-child/submit-actions";
+import { jalaliToGregorian } from "@/lib/date/jalali";
 
 type Option = { id: string; name: string };
 
@@ -77,12 +43,6 @@ export default function RegisterChildPage() {
             .then((res) => res.json())
             .then((data) => data.success && setGrades(data.grades));
     }, []);
-
-    const years = getBirthYearRange();
-    const dayCount =
-        form.birthYear && form.birthMonth
-            ? jalaliMonthLength(Number(form.birthYear), Number(form.birthMonth))
-            : 31;
 
     function updateField<K extends keyof typeof EMPTY_FORM>(
         key: K,
@@ -147,153 +107,55 @@ export default function RegisterChildPage() {
     }
 
     return (
-        <div className="flex flex-1 items-center justify-center p-4">
-            <Card className="w-full max-w-lg">
-                <CardHeader>
-                    <CardTitle>ثبت اطلاعات فرزند</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <form className="flex flex-col gap-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="flex flex-col gap-2">
-                                <Label htmlFor="firstName">نام</Label>
-                                <Input
-                                    id="firstName"
-                                    value={form.firstName}
-                                    onChange={(e) => updateField("firstName", e.target.value)}
-                                />
-                            </div>
-                            <div className="flex flex-col gap-2">
-                                <Label htmlFor="lastName">نام خانوادگی</Label>
-                                <Input
-                                    id="lastName"
-                                    value={form.lastName}
-                                    onChange={(e) => updateField("lastName", e.target.value)}
-                                />
-                            </div>
-                        </div>
+        <div className="min-h-dvh bg-[#F7F5F0]">
+            <main className="mx-auto w-full max-w-lg px-4 py-8 sm:px-6 sm:py-10">
+                <PageHeader />
 
-                        <div className="flex flex-col gap-2">
-                            <Label htmlFor="nationalCode">کد ملی</Label>
-                            <Input
-                                id="nationalCode"
-                                dir="ltr"
-                                maxLength={10}
-                                value={form.nationalCode}
-                                onChange={(e) => updateField("nationalCode", e.target.value)}
-                            />
-                        </div>
+                <div className="rounded-3xl border border-border/70 bg-background p-5 shadow-sm sm:p-7">
+                    <form className="flex flex-col gap-5">
+                        <NameFields
+                            firstName={form.firstName}
+                            lastName={form.lastName}
+                            onFirstNameChange={(v) => updateField("firstName", v)}
+                            onLastNameChange={(v) => updateField("lastName", v)}
+                        />
 
-                        <div className="flex flex-col gap-2">
-                            <Label>جنسیت</Label>
-                            <select
-                                className="border rounded-md h-9 px-3"
-                                value={form.gender}
-                                onChange={(e) =>
-                                    updateField("gender", e.target.value as "MALE" | "FEMALE")
-                                }
-                            >
-                                <option value="MALE">پسر</option>
-                                <option value="FEMALE">دختر</option>
-                            </select>
-                        </div>
+                        <NationalCodeField
+                            value={form.nationalCode}
+                            onChange={(v) => updateField("nationalCode", v)}
+                        />
 
-                        <div className="flex flex-col gap-2">
-                            <Label>تاریخ تولد</Label>
-                            <div className="grid grid-cols-3 gap-2">
-                                <select
-                                    className="border rounded-md h-9 px-2"
-                                    value={form.birthYear}
-                                    onChange={(e) => updateField("birthYear", e.target.value)}
-                                >
-                                    <option value="">سال</option>
-                                    {years.map((y) => (
-                                        <option key={y} value={y}>
-                                            {y}
-                                        </option>
-                                    ))}
-                                </select>
-                                <select
-                                    className="border rounded-md h-9 px-2"
-                                    value={form.birthMonth}
-                                    onChange={(e) => updateField("birthMonth", e.target.value)}
-                                >
-                                    <option value="">ماه</option>
-                                    {PERSIAN_MONTH_NAMES.map((name, index) => (
-                                        <option key={name} value={index + 1}>
-                                            {name}
-                                        </option>
-                                    ))}
-                                </select>
-                                <select
-                                    className="border rounded-md h-9 px-2"
-                                    value={form.birthDay}
-                                    onChange={(e) => updateField("birthDay", e.target.value)}
-                                >
-                                    <option value="">روز</option>
-                                    {Array.from({ length: dayCount }, (_, i) => i + 1).map(
-                                        (d) => (
-                                            <option key={d} value={d}>
-                                                {d}
-                                            </option>
-                                        )
-                                    )}
-                                </select>
-                            </div>
-                        </div>
+                        <GenderField
+                            value={form.gender}
+                            onChange={(v) => updateField("gender", v)}
+                        />
 
-                        <div className="flex flex-col gap-2">
-                            <Label>مدرسه</Label>
-                            <select
-                                className="border rounded-md h-9 px-3"
-                                value={form.schoolId}
-                                onChange={(e) => updateField("schoolId", e.target.value)}
-                            >
-                                <option value="">انتخاب کنید</option>
-                                {schools.map((s) => (
-                                    <option key={s.id} value={s.id}>
-                                        {s.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        <BirthDateField
+                            year={form.birthYear}
+                            month={form.birthMonth}
+                            day={form.birthDay}
+                            onYearChange={(v) => updateField("birthYear", v)}
+                            onMonthChange={(v) => updateField("birthMonth", v)}
+                            onDayChange={(v) => updateField("birthDay", v)}
+                        />
 
-                        <div className="flex flex-col gap-2">
-                            <Label>مقطع تحصیلی</Label>
-                            <select
-                                className="border rounded-md h-9 px-3"
-                                value={form.gradeId}
-                                onChange={(e) => updateField("gradeId", e.target.value)}
-                            >
-                                <option value="">انتخاب کنید</option>
-                                {grades.map((g) => (
-                                    <option key={g.id} value={g.id}>
-                                        {g.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        <SchoolGradeFields
+                            schools={schools}
+                            grades={grades}
+                            schoolId={form.schoolId}
+                            gradeId={form.gradeId}
+                            onSchoolChange={(v) => updateField("schoolId", v)}
+                            onGradeChange={(v) => updateField("gradeId", v)}
+                        />
 
-                        <div className="flex gap-2 pt-2">
-                            <Button
-                                type="button"
-                                disabled={isSubmitting}
-                                onClick={(e) => handleSubmit(e, false)}
-                            >
-                                ذخیره
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                disabled={isSubmitting}
-                                onClick={(e) => handleSubmit(e, true)}
-                            >
-                                ذخیره و افزودن فرزند دیگر
-                            </Button>
-                        </div>
+                        <SubmitActions
+                            isSubmitting={isSubmitting}
+                            onSave={(e) => handleSubmit(e, false)}
+                            onSaveAndAddAnother={(e) => handleSubmit(e, true)}
+                        />
                     </form>
-                </CardContent>
-            </Card>
+                </div>
+            </main>
         </div>
     );
 }
