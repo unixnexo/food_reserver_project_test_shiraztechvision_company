@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays, Loader2 } from "lucide-react";
+import {
+    CalendarDays,
+    CalendarX2,
+    Loader2,
+} from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
@@ -10,12 +15,15 @@ import { ClosedDay } from "@/app/admin/closed-days/page";
 type ClosedDayFormProps = {
     closedDays: ClosedDay[];
     onSubmit: (date: Date) => Promise<void>;
+    onRemove: (date: Date) => Promise<void>;
     isSubmitting: boolean;
 };
+
 
 export function ClosedDayForm({
     closedDays,
     onSubmit,
+    onRemove,
     isSubmitting,
 }: ClosedDayFormProps) {
     const today = new Date();
@@ -25,6 +33,14 @@ export function ClosedDayForm({
 
     async function handleSubmit() {
         if (!selectedDate || isSubmitting) return;
+
+        if (selectedDateIsOffDay) {
+            if (selectedDateIsAlwaysOff) return;
+
+            await onRemove(selectedDate);
+            setSelectedDate(undefined);
+            return;
+        }
 
         await onSubmit(selectedDate);
         setSelectedDate(undefined);
@@ -56,6 +72,14 @@ export function ClosedDayForm({
 
         return closedDateSet.has(`${year}-${month}-${day}`);
     }
+
+    const selectedDateIsOffDay = selectedDate
+        ? isOffDay(selectedDate)
+        : false;
+
+    const selectedDateIsAlwaysOff = selectedDate
+        ? selectedDate.getDay() === 4 || selectedDate.getDay() === 5
+        : false;
 
     return (
         <section className="rounded-3xl border border-border/70 bg-background p-4 shadow-sm sm:p-6">
@@ -113,15 +137,65 @@ export function ClosedDayForm({
                 <Button
                     type="button"
                     onClick={handleSubmit}
-                    disabled={!selectedDate || isSubmitting}
-                    className="h-12 w-full rounded-2xl bg-[#183D2B] text-white hover:bg-[#24543C]"
+                    disabled={
+                        !selectedDate ||
+                        isSubmitting ||
+                        selectedDateIsAlwaysOff
+                    }
+                    className={
+                        selectedDateIsOffDay && !selectedDateIsAlwaysOff
+                            ? "h-12 w-full rounded-2xl bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700"
+                            : "h-12 w-full rounded-2xl bg-[#183D2B] text-white hover:bg-[#24543C]"
+                    }
                 >
-                    {isSubmitting ? (
-                        <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                        <CalendarDays className="size-4" />
-                    )}
-                    ثبت تعطیلی
+                    <AnimatePresence mode="wait" initial={false}>
+                        {isSubmitting ? (
+                            <motion.span
+                                key="loading"
+                                initial={{ opacity: 0, scale: 0.85 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.85 }}
+                                transition={{ duration: 0.15 }}
+                                className="flex items-center gap-2"
+                            >
+                                <Loader2 className="size-4 animate-spin" />
+                                در حال انجام...
+                            </motion.span>
+                        ) : selectedDateIsOffDay ? (
+                            <motion.span
+                                key="remove"
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -6 }}
+                                transition={{
+                                    duration: 0.2,
+                                    ease: "easeOut",
+                                }}
+                                className="flex items-center gap-2"
+                            >
+                                <CalendarX2 className="size-4" />
+
+                                {selectedDateIsAlwaysOff
+                                    ? "تعطیل هفتگی"
+                                    : "باز کردن روز"}
+                            </motion.span>
+                        ) : (
+                            <motion.span
+                                key="add"
+                                initial={{ opacity: 0, y: -6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 6 }}
+                                transition={{
+                                    duration: 0.2,
+                                    ease: "easeOut",
+                                }}
+                                className="flex items-center gap-2"
+                            >
+                                <CalendarDays className="size-4" />
+                                ثبت تعطیلی
+                            </motion.span>
+                        )}
+                    </AnimatePresence>
                 </Button>
             </div>
         </section>

@@ -51,13 +51,47 @@ export default function AdminClosedDaysPage() {
         }
     }
 
+    async function handleRemoveClosureByDate(selectedDate: Date) {
+        const dateParam = toDateParam(selectedDate);
+
+        const closedDay = closedDays.find(
+            (day) => day.date.split("T")[0] === dateParam
+        );
+
+        if (!closedDay) return;
+
+        setIsSubmitting(true);
+
+        try {
+            const res = await fetch(
+                `/api/admin/closed-days/${closedDay.id}`,
+                {
+                    method: "DELETE",
+                }
+            );
+
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                toast.error(data.error || "باز کردن روز انجام نشد");
+                return;
+            }
+
+            toast.success("روز مجدداً باز شد");
+
+            await loadClosedDays();
+        } catch {
+            toast.error("خطا در ارتباط با سرور");
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
+
     useEffect(() => {
         loadClosedDays();
     }, []);
 
-    async function handleAddClosure(
-        selectedDate: Date,
-    ) {
+    async function handleAddClosure(selectedDate: Date) {
         setIsSubmitting(true);
 
         try {
@@ -143,6 +177,7 @@ export default function AdminClosedDaysPage() {
                 <ClosedDayForm
                     closedDays={closedDays}
                     onSubmit={handleAddClosure}
+                    onRemove={handleRemoveClosureByDate}
                     isSubmitting={isSubmitting}
                 />
 
