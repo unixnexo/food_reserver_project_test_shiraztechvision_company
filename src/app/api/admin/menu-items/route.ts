@@ -22,6 +22,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { createMenuItemSchema } from "@/lib/validations/menu-item";
 import { toDateOnly } from "@/lib/date/normalize";
+import { isSchoolDay } from "@/lib/school-calendar/is-school-day";
 import { Prisma } from "@prisma/client";
 
 export async function GET(request: Request) {
@@ -63,6 +64,21 @@ export async function POST(request: Request) {
     }
 
     const date = toDateOnly(parsed.data.date);
+
+    // Reject assigning food to a non-school day (Thursday/Friday default
+    // closure, or an admin-defined extra closed day) — a menu on an off day
+    // could never actually be ordered by parents (their date pickers
+    // already exclude such days), so allowing it here would just create
+    // orphaned, confusing admin data.
+    if (!(await isSchoolDay(date))) {
+        return NextResponse.json(
+            {
+                success: false,
+                error: "این روز تعطیل است و امکان تعریف منو برای آن وجود ندارد",
+            },
+            { status: 400 }
+        );
+    }
 
     try {
         const menuItem = await prisma.menuItem.create({

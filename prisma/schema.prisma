@@ -208,5 +208,6 @@ model OrderItem {
 
   @@index([orderId])
   @@index([childId])
+  @@unique([childId, date]) // DB-level guarantee: one meal per child per day, closes the race window the application-level check alone can't fully close
   @@map("order_items")
 }

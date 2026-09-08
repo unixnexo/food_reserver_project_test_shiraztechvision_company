@@ -35,7 +35,7 @@ import {
     isSchoolDaySync,
     getClosedDatesInRange,
 } from "@/lib/school-calendar/is-school-day";
-import type { OrderType } from "@prisma/client";
+import { Prisma, type OrderType } from "@prisma/client";
 
 export type OrderItemInput = {
     date: Date;
@@ -104,6 +104,12 @@ export async function createOrder(
         }
     }
 
+    // Fast-path check: gives a clean error message in the common case (no
+    // concurrent request). This alone does NOT close the race window — two
+    // simultaneous requests could both pass this check before either
+    // commits. The DB-level @@unique([childId, date]) constraint on
+    // OrderItem (see schema.prisma) is what actually guarantees correctness
+    // under concurrency; the try/catch below handles that constraint firing.
     const existingItemsForChild = await prisma.orderItem.findMany({
         where: { childId, date: { in: dates } },
     });
@@ -144,15 +150,40 @@ export async function createOrder(
 
     const totalAmount = itemsWithPrice.reduce((sum, item) => sum + item.unitPrice, 0);
 
-    const order = await prisma.order.create({
-        data: {
-            type,
-            status: "PENDING",
-            userId: parentId,
-            totalAmount,
-            items: { create: itemsWithPrice },
-        },
-    });
+    try {
+        // Wrapped in a transaction so the order and all its items are created
+        // atomically — if the unique constraint rejects ANY item (a
+        // concurrent request won the race for that child+date), the whole
+        // order creation rolls back rather than leaving a partial order.
+        const order = await prisma.$transaction(async (tx) => {
+            return tx.order.create({
+                data: {
+                    type,
+                    status: "PENDING",
+                    userId: parentId,
+                    totalAmount,
+                    items: { create: itemsWithPrice },
+                },
+            });
+        });
 
-    return { ok: true, orderId: order.id, totalAmount };
+        return { ok: true, orderId: order.id, totalAmount };
+    } catch (error) {
+        // P2002 = unique constraint violation. With items created via a
+        // nested `create`, this fires when @@unique([childId, date]) on
+        // OrderItem is violated — i.e. a concurrent request for the same
+        // child+date won the race between our fast-path check above and this
+        // transaction committing.
+        if (
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+            error.code === "P2002"
+        ) {
+            return {
+                ok: false,
+                error: "برای این فرزند در یکی از تاریخ‌های انتخابی قبلا غذا رزرو شده است",
+                status: 409,
+            };
+        }
+        throw error;
+    }
 }

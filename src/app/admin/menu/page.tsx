@@ -48,6 +48,7 @@ export default function AdminMenuPage() {
     const [selectedFoodId, setSelectedFoodId] = useState("");
 
     const [isLoading, setIsLoading] = useState(true);
+    const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [closedDays, setClosedDays] = useState<
@@ -106,6 +107,7 @@ export default function AdminMenuPage() {
             toast.error("خطا در ارتباط با سرور");
         } finally {
             setIsLoading(false);
+            setHasLoadedOnce(true);
         }
     }
 
@@ -264,6 +266,7 @@ export default function AdminMenuPage() {
                     <MenuFoodList
                         items={dayMenuItems}
                         isLoading={isLoading}
+                        hasLoadedOnce={hasLoadedOnce}
                         onDelete={setSelectedMenuItem}
                     />
                 </section>
