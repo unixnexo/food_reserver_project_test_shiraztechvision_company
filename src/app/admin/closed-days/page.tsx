@@ -28,6 +28,7 @@ export default function AdminClosedDaysPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedClosedDay, setSelectedClosedDay] =
         useState<ClosedDay | null>(null);
+    const [viewedMonth, setViewedMonth] = useState<Date>(new Date());
 
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -35,7 +36,10 @@ export default function AdminClosedDaysPage() {
         try {
             setIsLoading(true);
 
-            const res = await fetch("/api/admin/closed-days");
+            const res = await fetch("/api/admin/closed-days", {
+                cache: "no-store",
+            });
+
             const data = await res.json();
 
             if (!res.ok || !data.success) {
@@ -48,6 +52,51 @@ export default function AdminClosedDaysPage() {
             toast.error("خطا در ارتباط با سرور");
         } finally {
             setIsLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        loadClosedDays();
+    }, []);
+
+    async function handleAddClosure(selectedDate: Date) {
+        setIsSubmitting(true);
+
+        try {
+            const res = await fetch("/api/admin/closed-days", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    date: toDateParam(selectedDate),
+                }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                toast.error(data.error || "ثبت تعطیلی انجام نشد");
+                return;
+            }
+
+            // Add the exact record returned by the API.
+            setClosedDays((prev) => {
+                const next = [...prev, data.closedDay];
+
+                next.sort(
+                    (a, b) =>
+                        a.date.localeCompare(b.date)
+                );
+
+                return next;
+            });
+
+            toast.success("روز مورد نظر تعطیل شد");
+        } catch {
+            toast.error("خطا در ارتباط با سرور");
+        } finally {
+            setIsSubmitting(false);
         }
     }
 
@@ -77,44 +126,11 @@ export default function AdminClosedDaysPage() {
                 return;
             }
 
+            setClosedDays((prev) =>
+                prev.filter((day) => day.id !== closedDay.id)
+            );
+
             toast.success("روز مجدداً باز شد");
-
-            await loadClosedDays();
-        } catch {
-            toast.error("خطا در ارتباط با سرور");
-        } finally {
-            setIsSubmitting(false);
-        }
-    }
-
-    useEffect(() => {
-        loadClosedDays();
-    }, []);
-
-    async function handleAddClosure(selectedDate: Date) {
-        setIsSubmitting(true);
-
-        try {
-            const res = await fetch("/api/admin/closed-days", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    date: toDateParam(selectedDate),
-                }),
-            });
-
-            const data = await res.json();
-
-            if (!res.ok || !data.success) {
-                toast.error(data.error || "ثبت تعطیلی انجام نشد");
-                return;
-            }
-
-            toast.success("روز مورد نظر تعطیل شد");
-
-            await loadClosedDays();
         } catch {
             toast.error("خطا در ارتباط با سرور");
         } finally {
@@ -141,10 +157,13 @@ export default function AdminClosedDaysPage() {
                 return;
             }
 
+            setClosedDays((prev) =>
+                prev.filter((day) => day.id !== id)
+            );
+
             toast.success("روز مجدداً باز شد");
 
             setSelectedClosedDay(null);
-            await loadClosedDays();
         } catch {
             toast.error("خطا در ارتباط با سرور");
         } finally {
@@ -154,7 +173,6 @@ export default function AdminClosedDaysPage() {
 
     return (
         <div className="mx-auto w-full max-w-6xl">
-            {/* Heading */}
             <div className="mb-8">
                 <div className="mb-2 flex items-center gap-3">
                     <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-[#EAF3ED] text-[#183D2B]">
@@ -173,15 +191,14 @@ export default function AdminClosedDaysPage() {
             </div>
 
             <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start">
-                {/* Add closed day */}
                 <ClosedDayForm
                     closedDays={closedDays}
                     onSubmit={handleAddClosure}
                     onRemove={handleRemoveClosureByDate}
                     isSubmitting={isSubmitting}
+                    onMonthChange={setViewedMonth}
                 />
 
-                {/* Closed days */}
                 <section className="rounded-3xl border border-border/70 bg-background p-4 shadow-sm sm:p-6">
                     <div className="mb-6 flex items-start gap-3">
                         <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[#EAF3ED] text-[#183D2B]">
@@ -194,7 +211,8 @@ export default function AdminClosedDaysPage() {
                             </h2>
 
                             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                                روزهایی که به‌صورت دستی تعطیل شده‌اند.
+                                برای مشاهده تعطیلات سایر ماه‌ها، ماه را در
+                                تقویم تغییر دهید.
                             </p>
                         </div>
                     </div>
@@ -203,15 +221,17 @@ export default function AdminClosedDaysPage() {
                         closedDays={closedDays}
                         isLoading={isLoading}
                         deletingId={deletingId}
+                        viewedMonth={viewedMonth}
                         onDelete={(id) => {
-                            const day = closedDays.find((item) => item.id === id);
+                            const day = closedDays.find(
+                                (item) => item.id === id
+                            );
 
                             if (day) {
                                 setSelectedClosedDay(day);
                             }
                         }}
                     />
-
                 </section>
             </div>
 
@@ -221,7 +241,6 @@ export default function AdminClosedDaysPage() {
                 onClose={() => setSelectedClosedDay(null)}
                 onConfirm={handleRemoveClosure}
             />
-
         </div>
     );
 }

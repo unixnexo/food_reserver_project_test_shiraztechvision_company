@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
     CalendarDays,
     CalendarX2,
@@ -11,12 +11,14 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { ClosedDay } from "@/app/admin/closed-days/page";
+import { formatPersianDate } from "@/lib/date/format-persian-date";
 
 type ClosedDayFormProps = {
     closedDays: ClosedDay[];
     onSubmit: (date: Date) => Promise<void>;
     onRemove: (date: Date) => Promise<void>;
     isSubmitting: boolean;
+    onMonthChange: (month: Date) => void;
 };
 
 
@@ -25,6 +27,7 @@ export function ClosedDayForm({
     onSubmit,
     onRemove,
     isSubmitting,
+    onMonthChange,
 }: ClosedDayFormProps) {
     const today = new Date();
 
@@ -50,6 +53,7 @@ export function ClosedDayForm({
         const today = new Date();
 
         setMonth(today);
+        onMonthChange(today);
         setSelectedDate(today);
     }
 
@@ -100,21 +104,15 @@ export function ClosedDayForm({
             </div>
 
             <div className="flex justify-center">
-                {/* <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    month={month}
-                    onMonthChange={setMonth}
-                    className="rounded-2xl border-0 p-0"
-                /> */}
-
                 <Calendar
                     mode="single"
                     selected={selectedDate}
                     onSelect={setSelectedDate}
                     month={month}
-                    onMonthChange={setMonth}
+                    onMonthChange={(newMonth) => {
+                        setMonth(newMonth);
+                        onMonthChange(newMonth);
+                    }}
                     modifiers={{
                         offDay: isOffDay,
                     }}
