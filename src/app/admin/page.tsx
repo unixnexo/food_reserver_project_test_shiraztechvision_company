@@ -1,21 +1,10 @@
-// src/app/admin/page.tsx
-//
-// PAGE PURPOSE (for AI agents / future readers):
-// Admin's full system-wide reservation report. Sourced from
-// GET /api/admin/reports with filters (school, grade, exact day, Jalali
-// month, order status, order type — all combine as AND). Unpaginated by
-// design (see route comment). Renders as a flat table — one row per
-// reserved meal (OrderItem), not grouped by order.
-//
-// This is intentionally simple styling — a full UI/UX pass, and possibly
-// export/pagination features, come later. Structure and data are the
-// priority now.
-
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ClipboardList } from "lucide-react";
+
+import { ReportFilters } from "@/components/admin/reports/report-filters";
+import { ReportTable } from "@/components/admin/reports/report-table";
 
 type Option = { id: string; name: string };
 
@@ -34,12 +23,6 @@ type ReportRow = {
     orderPlacedAt: string;
 };
 
-const STATUS_LABELS: Record<ReportRow["orderStatus"], string> = {
-    PENDING: "در انتظار پرداخت",
-    PAID: "پرداخت شده",
-    FAILED: "ناموفق",
-};
-
 export default function AdminReportsPage() {
     const [schools, setSchools] = useState<Option[]>([]);
     const [grades, setGrades] = useState<Option[]>([]);
@@ -48,9 +31,13 @@ export default function AdminReportsPage() {
 
     const [schoolId, setSchoolId] = useState("");
     const [gradeId, setGradeId] = useState("");
-    const [date, setDate] = useState("");
     const [orderStatus, setOrderStatus] = useState("");
     const [orderType, setOrderType] = useState("");
+
+    const [jy, setJy] = useState<number | null>(null);
+    const [jm, setJm] = useState<number | null>(null);
+    const [jd, setJd] = useState<number | null>(null);
+    const [date, setDate] = useState<string>("");
 
     useEffect(() => {
         fetch("/api/schools")
@@ -84,137 +71,87 @@ export default function AdminReportsPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    async function handleClear() {
+        setSchoolId("");
+        setGradeId("");
+        setOrderStatus("");
+        setOrderType("");
+        setJy(null);
+        setJm(null);
+        setJd(null);
+        setDate("");
+
+        setIsLoading(true);
+        try {
+            const res = await fetch("/api/admin/reports");
+            const data = await res.json();
+            if (data.success) setRows(data.rows);
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
     const totalAmount = rows
         .filter((r) => r.orderStatus === "PAID")
         .reduce((sum, r) => sum + r.amount, 0);
 
     return (
-        <div className="flex flex-col gap-4">
-            <Card>
-                <CardHeader>
-                    <CardTitle>فیلترها</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-wrap gap-3">
-                    <select
-                        className="border rounded-md h-9 px-3"
-                        value={schoolId}
-                        onChange={(e) => setSchoolId(e.target.value)}
-                    >
-                        <option value="">همه مدارس</option>
-                        {schools.map((s) => (
-                            <option key={s.id} value={s.id}>
-                                {s.name}
-                            </option>
-                        ))}
-                    </select>
+        <div className="mx-auto w-full max-w-6xl">
+            <div className="mb-8">
+                <div className="mb-2 flex items-center gap-3">
+                    <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-[#EAF3ED] text-[#183D2B]">
+                        <ClipboardList className="size-6" />
+                    </div>
 
-                    <select
-                        className="border rounded-md h-9 px-3"
-                        value={gradeId}
-                        onChange={(e) => setGradeId(e.target.value)}
-                    >
-                        <option value="">همه مقاطع</option>
-                        {grades.map((g) => (
-                            <option key={g.id} value={g.id}>
-                                {g.name}
-                            </option>
-                        ))}
-                    </select>
+                    <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                        گزارش‌ها
+                    </h1>
+                </div>
 
-                    <input
-                        type="date"
-                        className="border rounded-md h-9 px-3"
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                    />
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    گزارش کامل سفارش‌های غذای ثبت‌شده در سیستم.
+                </p>
+            </div>
 
-                    <select
-                        className="border rounded-md h-9 px-3"
-                        value={orderStatus}
-                        onChange={(e) => setOrderStatus(e.target.value)}
-                    >
-                        <option value="">همه وضعیت‌ها</option>
-                        <option value="PENDING">در انتظار پرداخت</option>
-                        <option value="PAID">پرداخت شده</option>
-                        <option value="FAILED">ناموفق</option>
-                    </select>
+            <div className="flex flex-col gap-6">
+                <ReportFilters
+                    schools={schools}
+                    grades={grades}
+                    schoolId={schoolId}
+                    gradeId={gradeId}
+                    orderStatus={orderStatus}
+                    orderType={orderType}
+                    jy={jy}
+                    jm={jm}
+                    jd={jd}
+                    isLoading={isLoading}
+                    onSchoolChange={setSchoolId}
+                    onGradeChange={setGradeId}
+                    onOrderStatusChange={setOrderStatus}
+                    onOrderTypeChange={setOrderType}
+                    onDateChange={({ jy, jm, jd, gregorian }) => {
+                        setJy(jy);
+                        setJm(jm);
+                        setJd(jd);
+                        setDate(gregorian ?? "");
+                    }}
+                    onApply={runReport}
+                    onClear={handleClear}
+                />
 
-                    <select
-                        className="border rounded-md h-9 px-3"
-                        value={orderType}
-                        onChange={(e) => setOrderType(e.target.value)}
-                    >
-                        <option value="">روزانه و ماهانه</option>
-                        <option value="DAILY">روزانه</option>
-                        <option value="MONTHLY">ماهانه</option>
-                    </select>
+                <section className="rounded-3xl border border-border/70 bg-background p-4 shadow-sm sm:p-6">
+                    <div className="mb-5">
+                        <h2 className="text-base font-semibold">
+                            نتایج ({rows.length.toLocaleString("fa-IR")} مورد)
+                        </h2>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                            جمع پرداخت‌شده: {totalAmount.toLocaleString("fa-IR")} تومان
+                        </p>
+                    </div>
 
-                    <Button onClick={runReport} disabled={isLoading}>
-                        اعمال فیلتر
-                    </Button>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>
-                        نتایج ({rows.length} مورد — جمع پرداخت‌شده:{" "}
-                        {totalAmount.toLocaleString()} تومن)
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {isLoading && <p className="text-sm text-muted-foreground">در حال بارگذاری...</p>}
-                    {!isLoading && rows.length === 0 && (
-                        <p className="text-sm text-muted-foreground">موردی یافت نشد.</p>
-                    )}
-                    {!isLoading && rows.length > 0 && (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm border-collapse">
-                                <thead>
-                                    <tr className="border-b text-right">
-                                        <th className="p-2">تاریخ</th>
-                                        <th className="p-2">دانش‌آموز</th>
-                                        <th className="p-2">مدرسه</th>
-                                        <th className="p-2">مقطع</th>
-                                        <th className="p-2">غذا</th>
-                                        <th className="p-2">سایز</th>
-                                        <th className="p-2">مبلغ</th>
-                                        <th className="p-2">نوع سفارش</th>
-                                        <th className="p-2">وضعیت</th>
-                                        <th className="p-2">موبایل والدین</th>
-                                        <th className="p-2">زمان ثبت سفارش</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {rows.map((r, index) => (
-                                        <tr key={`${r.orderId}-${index}`} className="border-b">
-                                            <td className="p-2">{r.date}</td>
-                                            <td className="p-2">{r.childName}</td>
-                                            <td className="p-2">{r.schoolName}</td>
-                                            <td className="p-2">{r.gradeName}</td>
-                                            <td className="p-2">{r.foodName}</td>
-                                            <td className="p-2">
-                                                {r.portionType === "HALF" ? "نیم پرس" : "تمام پرس"}
-                                            </td>
-                                            <td className="p-2">{r.amount.toLocaleString()}</td>
-                                            <td className="p-2">
-                                                {r.orderType === "DAILY" ? "روزانه" : "ماهانه"}
-                                            </td>
-                                            <td className="p-2">{STATUS_LABELS[r.orderStatus]}</td>
-                                            <td className="p-2" dir="ltr">
-                                                {r.parentPhone}
-                                            </td>
-                                            <td className="p-2" dir="ltr">
-                                                {new Date(r.orderPlacedAt).toLocaleString("fa-IR")}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                    <ReportTable rows={rows} isLoading={isLoading} />
+                </section>
+            </div>
         </div>
     );
 }
