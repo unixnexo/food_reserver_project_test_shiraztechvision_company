@@ -42,7 +42,7 @@ export function MenuFoodForm({
                 onValueChange={onFoodChange}
                 disabled={isSubmitting || foods.length === 0}
             >
-                <SelectTrigger className="h-12 min-h-12 flex-1 rounded-2xl border-border/70 bg-background px-4 text-sm shadow-none">
+                <SelectTrigger className="h-12 w-full min-h-12 flex-1 rounded-2xl border-border/70 bg-background px-4 text-sm shadow-none">
                     <SelectValue
                         placeholder={
                             foods.length === 0

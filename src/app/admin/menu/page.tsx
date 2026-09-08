@@ -50,6 +50,9 @@ export default function AdminMenuPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [closedDays, setClosedDays] = useState<
+        { id: string; date: string; reason: string | null }[]
+    >([]);
 
     const [selectedMenuItem, setSelectedMenuItem] =
         useState<MenuItem | null>(null);
@@ -67,6 +70,19 @@ export default function AdminMenuPage() {
             setAllFoods(data.foods);
         } catch {
             toast.error("خطا در ارتباط با سرور");
+        }
+    }
+
+    async function loadClosedDays() {
+        try {
+            const res = await fetch("/api/admin/closed-days");
+            const data = await res.json();
+
+            if (!res.ok || !data.success) return;
+
+            setClosedDays(data.closedDays);
+        } catch {
+            // silent — off-day highlighting is non-critical
         }
     }
 
@@ -95,6 +111,7 @@ export default function AdminMenuPage() {
 
     useEffect(() => {
         loadFoods();
+        loadClosedDays();
     }, []);
 
     useEffect(() => {
@@ -205,6 +222,7 @@ export default function AdminMenuPage() {
                     onSelect={(date) => {
                         if (date) setSelectedDate(date);
                     }}
+                    closedDays={closedDays}
                 />
 
                 {/* Day menu */}
