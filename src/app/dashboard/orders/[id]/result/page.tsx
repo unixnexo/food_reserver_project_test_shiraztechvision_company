@@ -14,7 +14,8 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { OrderResultIcon } from "@/components/orders/order-result-icon";
+import { OrderSuccessDetails } from "@/components/orders/order-success-details";
 
 export default async function OrderResultPage({
     params,
@@ -29,43 +30,47 @@ export default async function OrderResultPage({
     const order = await prisma.order.findUnique({ where: { id } });
 
     if (!order || order.userId !== session.userId) {
-        return <p className="p-4 text-sm">سفارش یافت نشد.</p>;
+        return (
+            <div className="flex min-h-dvh items-center justify-center bg-[#F7F5F0] p-4">
+                <p className="text-sm text-muted-foreground">سفارش یافت نشد.</p>
+            </div>
+        );
     }
 
     const isPaid = order.status === "PAID";
 
     return (
-        <div className="flex flex-1 items-center justify-center p-4">
-            <Card className="w-full max-w-sm">
-                <CardHeader>
-                    <CardTitle>{isPaid ? "پرداخت موفق" : "پرداخت ناموفق"}</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-3">
-                    {isPaid ? (
-                        <>
-                            <p className="text-sm text-muted-foreground">
-                                رزرو شما با موفقیت ثبت و پرداخت شد.
-                            </p>
-                            <div className="border rounded-md p-3 text-center">
-                                <p className="text-xs text-muted-foreground mb-1">کد پیگیری</p>
-                                <p className="font-mono font-bold text-lg" dir="ltr">
-                                    {order.trackingCode}
-                                </p>
-                            </div>
-                            <p className="text-sm">
-                                مبلغ پرداخت شده: {order.totalAmount.toLocaleString()} تومن
-                            </p>
-                        </>
-                    ) : (
-                        <p className="text-sm text-muted-foreground">
-                            پرداخت انجام نشد یا لغو شد. می‌توانید دوباره تلاش کنید.
-                        </p>
-                    )}
-                    <Link href="/dashboard">
-                        <Button className="w-full">بازگشت به پنل</Button>
-                    </Link>
-                </CardContent>
-            </Card>
+        <div className="flex min-h-dvh items-center justify-center bg-[#F7F5F0] p-4">
+            <div className="w-full max-w-sm rounded-3xl border border-border/70 bg-background p-6 shadow-sm sm:p-8">
+                <div className="flex flex-col items-center text-center">
+                    <OrderResultIcon isPaid={isPaid} />
+
+                    <h1 className="mt-5 text-xl font-bold sm:text-2xl">
+                        {isPaid ? "پرداخت موفق" : "پرداخت ناموفق"}
+                    </h1>
+
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                        {isPaid
+                            ? "رزرو شما با موفقیت ثبت و پرداخت شد."
+                            : "پرداخت انجام نشد یا لغو شد. می‌توانید دوباره تلاش کنید."}
+                    </p>
+                </div>
+
+                {isPaid && (
+                    <div className="mt-6">
+                        <OrderSuccessDetails
+                            trackingCode={order.trackingCode}
+                            totalAmount={order.totalAmount}
+                        />
+                    </div>
+                )}
+
+                <Link href="/dashboard" className="mt-6 block">
+                    <Button className="h-14 w-full rounded-full bg-[#183D2B] text-white hover:bg-[#24543C]">
+                        بازگشت به پنل
+                    </Button>
+                </Link>
+            </div>
         </div>
     );
 }

@@ -1,30 +1,18 @@
-// src/app/dashboard/reserve/monthly/page.tsx
-//
-// PAGE PURPOSE (for AI agents / future readers):
-// Monthly reservation flow for a logged-in parent. Unlike the daily flow
-// (app/dashboard/reserve/daily/page.tsx), there is NO manual day picking —
-// every school day in NEXT Jalali month is automatically included (see
-// GET /api/reservations/monthly/school-days). Phases:
-//
-//   Phase "child"   — pick which registered child.
-//   Phase "food"    — for EVERY school day in next month (auto-fetched),
-//                      pick one food + one portion size.
-//   Phase "summary" — shows all selections + computed total, submits to
-//                      POST /api/reservations/monthly.
-//
-// This intentionally mirrors the daily flow's structure closely — the
-// underlying order-creation logic is shared (lib/reservation/create-order.ts)
-// and only the date-selection mechanism differs.
-//
-// This is intentionally bare-bones styling — full UI/UX pass happens later.
-
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CalendarRange } from "lucide-react";
+
+import { ChildPicker } from "@/components/reservation/child-picker";
+import { ReservationProgress } from "@/components/reservation/reservation-progress";
+import { DayFoodPicker } from "@/components/reservation/day-food-picker";
+import { ReservationSummary } from "@/components/reservation/reservation-summary";
+import { StickyContinueBar } from "@/components/reservation/sticky-continue-bar";
+import { useChildIdParam } from "@/lib/hooks/use-child-id-param";
+import { formatPersianDateString } from "@/lib/date/format-persian-date";
+import { BackButton } from "@/components/shared/back-button";
 
 type Child = {
     id: string;
@@ -39,7 +27,7 @@ type Pricing = { halfPortionPrice: number; fullPortionPrice: number };
 type PortionType = "HALF" | "FULL";
 
 type DaySelection = {
-    date: string; // YYYY-MM-DD
+    date: string;
     menuItemId: string | null;
     portionType: PortionType | null;
     availableMenuItems: MenuItem[] | null;
@@ -47,17 +35,30 @@ type DaySelection = {
 
 type Phase = "child" | "food" | "summary";
 
-export default function MonthlyReservationPage() {
+const STEPS = [
+    { key: "child", label: "فرزند" },
+    { key: "food", label: "غذا" },
+    { key: "summary", label: "خلاصه" },
+];
+
+function MonthlyReservationInner() {
     const router = useRouter();
-    const [phase, setPhase] = useState<Phase>("child");
+    const childIdFromUrl = useChildIdParam();
+
+    const [phase, setPhase] = useState<Phase>(childIdFromUrl ? "food" : "child");
 
     const [children, setChildren] = useState<Child[]>([]);
-    const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
+    const [selectedChildId, setSelectedChildId] = useState<string | null>(
+        childIdFromUrl
+    );
 
-    const [monthRange, setMonthRange] = useState<{ start: string; end: string } | null>(null);
+    const [monthRange, setMonthRange] = useState<{ start: string; end: string } | null>(
+        null
+    );
     const [daySelections, setDaySelections] = useState<DaySelection[]>([]);
     const [pricing, setPricing] = useState<Pricing | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoadingDays, setIsLoadingDays] = useState(false);
 
     useEffect(() => {
         fetch("/api/children")
@@ -65,38 +66,52 @@ export default function MonthlyReservationPage() {
             .then((data) => data.success && setChildren(data.children));
     }, []);
 
-    async function goToFoodPhase() {
-        const res = await fetch("/api/reservations/monthly/school-days");
-        const data = await res.json();
-        if (!data.success) {
-            toast.error("خطا در دریافت روزهای ماه آینده");
-            return;
+    useEffect(() => {
+        if (childIdFromUrl) {
+            goToFoodPhase();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [childIdFromUrl]);
 
-        setMonthRange(data.monthRange);
-
-        const initialSelections: DaySelection[] = data.schoolDays.map(
-            (date: string) => ({
-                date,
-                menuItemId: null,
-                portionType: null,
-                availableMenuItems: null,
-            })
-        );
-        setDaySelections(initialSelections);
-        setPhase("food");
-
-        for (const date of data.schoolDays as string[]) {
-            const menuRes = await fetch(`/api/reservations/menu?date=${date}`);
-            const menuData = await menuRes.json();
-            if (menuData.success) {
-                if (!pricing) setPricing(menuData.pricing);
-                setDaySelections((prev) =>
-                    prev.map((ds) =>
-                        ds.date === date ? { ...ds, availableMenuItems: menuData.menuItems } : ds
-                    )
-                );
+    async function goToFoodPhase() {
+        setIsLoadingDays(true);
+        try {
+            const res = await fetch("/api/reservations/monthly/school-days");
+            const data = await res.json();
+            if (!data.success) {
+                toast.error("خطا در دریافت روزهای ماه آینده");
+                return;
             }
+
+            setMonthRange(data.monthRange);
+
+            const initialSelections: DaySelection[] = data.schoolDays.map(
+                (date: string) => ({
+                    date,
+                    menuItemId: null,
+                    portionType: null,
+                    availableMenuItems: null,
+                })
+            );
+            setDaySelections(initialSelections);
+            setPhase("food");
+
+            for (const date of data.schoolDays as string[]) {
+                const menuRes = await fetch(`/api/reservations/menu?date=${date}`);
+                const menuData = await menuRes.json();
+                if (menuData.success) {
+                    if (!pricing) setPricing(menuData.pricing);
+                    setDaySelections((prev) =>
+                        prev.map((ds) =>
+                            ds.date === date
+                                ? { ...ds, availableMenuItems: menuData.menuItems }
+                                : ds
+                        )
+                    );
+                }
+            }
+        } finally {
+            setIsLoadingDays(false);
         }
     }
 
@@ -106,7 +121,9 @@ export default function MonthlyReservationPage() {
         portionType: PortionType
     ) {
         setDaySelections((prev) =>
-            prev.map((ds) => (ds.date === date ? { ...ds, menuItemId, portionType } : ds))
+            prev.map((ds) =>
+                ds.date === date ? { ...ds, menuItemId, portionType } : ds
+            )
         );
     }
 
@@ -123,11 +140,14 @@ export default function MonthlyReservationPage() {
 
     function calculateItemPrice(portionType: PortionType): number {
         if (!pricing) return 0;
-        return portionType === "HALF" ? pricing.halfPortionPrice : pricing.fullPortionPrice;
+        return portionType === "HALF"
+            ? pricing.halfPortionPrice
+            : pricing.fullPortionPrice;
     }
 
     const totalAmount = daySelections.reduce(
-        (sum, ds) => sum + (ds.portionType ? calculateItemPrice(ds.portionType) : 0),
+        (sum, ds) =>
+            sum + (ds.portionType ? calculateItemPrice(ds.portionType) : 0),
         0
     );
 
@@ -173,145 +193,120 @@ export default function MonthlyReservationPage() {
     }
 
     const selectedChild = children.find((c) => c.id === selectedChildId);
+    const currentStepIndex = STEPS.findIndex((s) => s.key === phase);
+    const isFoodComplete = daySelections.every(
+        (ds) => ds.menuItemId && ds.portionType
+    );
 
     return (
-        <div className="flex flex-1 items-center justify-center p-4">
-            <Card className="w-full max-w-xl">
-                <CardHeader>
-                    <CardTitle>رزرو غذای ماهانه</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-4">
+        <div className="min-h-dvh bg-[#F7F5F0]">
+            <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col px-4 py-6 sm:px-6 sm:py-10">
+                <div className="mb-6 flex items-center gap-4">
+                    <BackButton
+                        onClick={
+                            phase === "child"
+                                ? undefined
+                                : () => {
+                                    if (phase === "food") setPhase("child");
+                                    else if (phase === "summary") setPhase("food");
+                                }
+                        }
+                    />
+
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-lg font-bold sm:text-xl">رزرو غذای ماهانه</h1>
+                    </div>
+                </div>
+
+                <ReservationProgress steps={STEPS} currentIndex={currentStepIndex} />
+
+                <div className="flex-1">
                     {phase === "child" && (
                         <>
-                            <p className="text-sm text-muted-foreground">
-                                این رزرو ماهانه برای کدام فرزند است؟ (شامل تمام روزهای مدرسه
-                                در ماه آینده)
+                            <p className="mb-4 text-sm text-muted-foreground">
+                                این رزرو ماهانه برای کدام فرزند است؟ شامل تمام روزهای مدرسه
+                                در ماه آینده.
                             </p>
-                            <div className="flex flex-col gap-2">
-                                {children.map((child) => (
-                                    <button
-                                        key={child.id}
-                                        type="button"
-                                        onClick={() => setSelectedChildId(child.id)}
-                                        className={`border rounded-md p-3 text-sm text-right ${selectedChildId === child.id ? "border-primary" : ""
-                                            }`}
-                                    >
-                                        <div className="font-medium">
-                                            {child.firstName} {child.lastName}
-                                        </div>
-                                        <div className="text-muted-foreground">
-                                            {child.school.name} — {child.grade.name}
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                            <Button disabled={!selectedChildId} onClick={goToFoodPhase}>
-                                ادامه
-                            </Button>
+                            <ChildPicker
+                                children={children}
+                                selectedChildId={selectedChildId}
+                                onSelect={setSelectedChildId}
+                            />
                         </>
                     )}
 
                     {phase === "food" && (
                         <>
-                            <p className="text-sm text-muted-foreground">
-                                {monthRange && `از ${monthRange.start} تا ${monthRange.end}`} —
-                                برای هر روز، غذا و سایز پرس را انتخاب کنید
-                            </p>
-                            {daySelections.map((ds) => (
-                                <div key={ds.date} className="border rounded-md p-3">
-                                    <div className="font-medium mb-2">{ds.date}</div>
-                                    {ds.availableMenuItems === null && (
-                                        <p className="text-sm text-muted-foreground">
-                                            در حال بارگذاری...
-                                        </p>
-                                    )}
-                                    {ds.availableMenuItems?.length === 0 && (
-                                        <p className="text-sm text-muted-foreground">
-                                            برای این روز غذایی تعریف نشده است.
-                                        </p>
-                                    )}
-                                    {ds.availableMenuItems?.map((mi) => (
-                                        <div key={mi.id} className="flex items-center gap-2 mb-1">
-                                            <span className="flex-1 text-sm">{mi.food.name}</span>
-                                            <Button
-                                                size="sm"
-                                                variant={
-                                                    ds.menuItemId === mi.id && ds.portionType === "HALF"
-                                                        ? "default"
-                                                        : "outline"
-                                                }
-                                                onClick={() => updateDaySelection(ds.date, mi.id, "HALF")}
-                                            >
-                                                نیم پرس ({pricing?.halfPortionPrice.toLocaleString()} تومن)
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                variant={
-                                                    ds.menuItemId === mi.id && ds.portionType === "FULL"
-                                                        ? "default"
-                                                        : "outline"
-                                                }
-                                                onClick={() => updateDaySelection(ds.date, mi.id, "FULL")}
-                                            >
-                                                تمام پرس ({pricing?.fullPortionPrice.toLocaleString()} تومن)
-                                            </Button>
-                                        </div>
-                                    ))}
+                            {monthRange && (
+                                <div className="mb-4 rounded-2xl bg-[#EAF3ED] px-4 py-3 text-sm text-[#183D2B]">
+                                    از {formatPersianDateString(monthRange.start)} تا{" "}
+                                    {formatPersianDateString(monthRange.end)}
                                 </div>
-                            ))}
-                            <div className="flex gap-2">
-                                <Button variant="ghost" onClick={() => setPhase("child")}>
-                                    بازگشت
-                                </Button>
-                                <Button onClick={goToSummary}>ادامه به خلاصه سفارش</Button>
+                            )}
+                            <p className="mb-4 text-sm text-muted-foreground">
+                                برای هر روز، غذا و سایز پرس را انتخاب کنید.
+                            </p>
+                            <div className="flex flex-col gap-3">
+                                {daySelections.map((ds) => (
+                                    <DayFoodPicker
+                                        key={ds.date}
+                                        selection={ds}
+                                        pricing={pricing}
+                                        onSelect={(menuItemId, portionType) =>
+                                            updateDaySelection(ds.date, menuItemId, portionType)
+                                        }
+                                    />
+                                ))}
                             </div>
                         </>
                     )}
 
-                    {phase === "summary" && (
-                        <>
-                            <p className="text-sm">
-                                فرزند: {selectedChild?.firstName} {selectedChild?.lastName}
-                            </p>
-                            <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
-                                {daySelections.map((ds) => {
-                                    const food = ds.availableMenuItems?.find(
-                                        (mi) => mi.id === ds.menuItemId
-                                    );
-                                    return (
-                                        <div
-                                            key={ds.date}
-                                            className="flex justify-between border-b pb-1 text-sm"
-                                        >
-                                            <span>
-                                                {ds.date} — {food?.food.name} (
-                                                {ds.portionType === "HALF" ? "نیم پرس" : "تمام پرس"})
-                                            </span>
-                                            <span>
-                                                {ds.portionType &&
-                                                    calculateItemPrice(ds.portionType).toLocaleString()}{" "}
-                                                تومن
-                                            </span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                            <div className="flex justify-between font-bold pt-2">
-                                <span>مبلغ قابل پرداخت</span>
-                                <span>{totalAmount.toLocaleString()} تومن</span>
-                            </div>
-                            <div className="flex gap-2">
-                                <Button variant="ghost" onClick={() => setPhase("food")}>
-                                    بازگشت
-                                </Button>
-                                <Button disabled={isSubmitting} onClick={handleSubmitOrder}>
-                                    پرداخت و ثبت نهایی
-                                </Button>
-                            </div>
-                        </>
+                    {phase === "summary" && selectedChild && (
+                        <ReservationSummary
+                            childName={`${selectedChild.firstName} ${selectedChild.lastName}`}
+                            daySelections={daySelections}
+                            calculateItemPrice={calculateItemPrice}
+                            totalAmount={totalAmount}
+                        />
                     )}
-                </CardContent>
-            </Card>
+                </div>
+
+                {phase === "child" && (
+                    <StickyContinueBar
+                        label={isLoadingDays ? "در حال بارگذاری..." : "ادامه"}
+                        onContinue={goToFoodPhase}
+                        disabled={!selectedChildId || isLoadingDays}
+                        isLoading={isLoadingDays}
+                    />
+                )}
+
+                {phase === "food" && (
+                    <StickyContinueBar
+                        label="ادامه به خلاصه سفارش"
+                        onContinue={goToSummary}
+                        onBack={() => setPhase("child")}
+                        disabled={!isFoodComplete}
+                    />
+                )}
+
+                {phase === "summary" && (
+                    <StickyContinueBar
+                        label="پرداخت و ثبت نهایی"
+                        onContinue={handleSubmitOrder}
+                        onBack={() => setPhase("food")}
+                        disabled={isSubmitting}
+                        isLoading={isSubmitting}
+                    />
+                )}
+            </main>
         </div>
+    );
+}
+
+export default function MonthlyReservationPage() {
+    return (
+        <Suspense fallback={null}>
+            <MonthlyReservationInner />
+        </Suspense>
     );
 }
