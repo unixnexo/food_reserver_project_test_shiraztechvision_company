@@ -54,29 +54,88 @@ export function MenuCalendar({
         });
     }
 
-    useEffect(() => {
-        const year = month.getFullYear();
-        const gregorianMonth = month.getMonth() + 1;
-        const cacheKey = `${year}-${gregorianMonth}`;
+    // useEffect(() => {
+    //     const year = month.getFullYear();
+    //     const gregorianMonth = month.getMonth() + 1;
+    //     const cacheKey = `${year}-${gregorianMonth}`;
 
+    //     let cancelled = false;
+
+    //     async function loadCounts() {
+    //         try {
+    //             const res = await fetch(
+    //                 `/api/admin/menu-items/summary?year=${year}&month=${gregorianMonth}`
+    //             );
+
+    //             const data = await res.json();
+
+    //             if (cancelled || !res.ok || !data.success) return;
+
+    //             setCountsCache((prev) => ({
+    //                 ...prev,
+    //                 [cacheKey]: data.counts,
+    //             }));
+    //         } catch {
+    //             // silent — counts are non-critical
+    //         }
+    //     }
+
+    //     loadCounts();
+
+    //     return () => {
+    //         cancelled = true;
+    //     };
+    // }, [month, refreshKey]);
+
+    useEffect(() => {
         let cancelled = false;
 
         async function loadCounts() {
             try {
-                const res = await fetch(
-                    `/api/admin/menu-items/summary?year=${year}&month=${gregorianMonth}`
+                const baseDate = new Date(month);
+
+                const dates = [
+                    new Date(baseDate.getFullYear(), baseDate.getMonth() - 1, 1),
+                    new Date(baseDate.getFullYear(), baseDate.getMonth(), 1),
+                    new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 1),
+                ];
+
+                const results = await Promise.all(
+                    dates.map(async (date) => {
+                        const year = date.getFullYear();
+                        const gregorianMonth = date.getMonth() + 1;
+                        const cacheKey = `${year}-${gregorianMonth}`;
+
+                        const res = await fetch(
+                            `/api/admin/menu-items/summary?year=${year}&month=${gregorianMonth}`
+                        );
+
+                        const data = await res.json();
+
+                        if (!res.ok || !data.success) return null;
+
+                        return {
+                            cacheKey,
+                            counts: data.counts,
+                        };
+                    })
                 );
 
-                const data = await res.json();
+                if (cancelled) return;
 
-                if (cancelled || !res.ok || !data.success) return;
+                setCountsCache((prev) => {
+                    const next = { ...prev };
 
-                setCountsCache((prev) => ({
-                    ...prev,
-                    [cacheKey]: data.counts,
-                }));
+                    for (const result of results) {
+                        if (result) {
+                            next[result.cacheKey] = result.counts;
+                        }
+                    }
+
+                    return next;
+                });
             } catch {
-                // silent — counts are non-critical
+                // silent
             }
         }
 
