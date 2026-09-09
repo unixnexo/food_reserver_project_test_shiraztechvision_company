@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { getChildrenUpcomingStatus } from "@/lib/reservation/upcoming-status";
 
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { ChildCard } from "@/components/dashboard/child-card";
@@ -20,6 +21,10 @@ export default async function DashboardPage() {
         }),
     ]);
 
+    const statusMap = await getChildrenUpcomingStatus(
+        children.map((c) => c.id)
+    );
+
     return (
         <div className="min-h-dvh bg-[#F7F5F0]">
             <DashboardHeader phone={user?.phone ?? ""} />
@@ -38,16 +43,22 @@ export default async function DashboardPage() {
                     <EmptyChildrenState />
                 ) : (
                     <div className="flex flex-col gap-4">
-                        {children.map((child) => (
-                            <ChildCard
-                                key={child.id}
-                                id={child.id}
-                                firstName={child.firstName}
-                                lastName={child.lastName}
-                                schoolName={child.school.name}
-                                gradeName={child.grade.name}
-                            />
-                        ))}
+                        {children.map((child) => {
+                            const status = statusMap.get(child.id);
+
+                            return (
+                                <ChildCard
+                                    key={child.id}
+                                    id={child.id}
+                                    firstName={child.firstName}
+                                    lastName={child.lastName}
+                                    schoolName={child.school.name}
+                                    gradeName={child.grade.name}
+                                    days={status?.days ?? []}
+                                    needsAction={status?.needsAction ?? false}
+                                />
+                            );
+                        })}
                     </div>
                 )}
 

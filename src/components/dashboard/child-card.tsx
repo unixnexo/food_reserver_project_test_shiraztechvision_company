@@ -1,5 +1,13 @@
 import Link from "next/link";
-import { UtensilsCrossed, CalendarDays, GraduationCap } from "lucide-react";
+import { UtensilsCrossed, CalendarDays, GraduationCap, AlertCircle } from "lucide-react";
+import { ChildDayList } from "@/components/dashboard/child-day-list";
+
+type DayStatus = {
+    date: string;
+    hasReservation: boolean;
+    foodName: string | null;
+    portionType: "HALF" | "FULL" | null;
+};
 
 type ChildCardProps = {
     id: string;
@@ -7,6 +15,8 @@ type ChildCardProps = {
     lastName: string;
     schoolName: string;
     gradeName: string;
+    days: DayStatus[];
+    needsAction: boolean;
 };
 
 export function ChildCard({
@@ -15,9 +25,14 @@ export function ChildCard({
     lastName,
     schoolName,
     gradeName,
+    days,
+    needsAction,
 }: ChildCardProps) {
     return (
-        <div className="rounded-3xl border border-border/70 bg-background p-5 shadow-sm sm:p-6">
+        <div
+            className={`rounded-3xl border bg-background p-5 shadow-sm transition-colors sm:p-6 ${needsAction ? "border-red-200" : "border-border/70"
+                }`}
+        >
             <div className="flex items-start gap-4">
                 <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-[#EAF3ED] text-lg font-bold text-[#183D2B]">
                     {firstName.charAt(0)}
@@ -36,6 +51,17 @@ export function ChildCard({
                     </div>
                 </div>
             </div>
+
+            <ChildDayList days={days} />
+
+            {needsAction && (
+                <div className="mt-3 flex items-center gap-2 rounded-2xl bg-red-50 px-3.5 py-2.5 text-xs text-red-700">
+                    <AlertCircle className="size-4 shrink-0" />
+                    <span>
+                        قبل از ساعت ۵ عصر امروز برای فردا رزرو کن، وگرنه دیر میشه!
+                    </span>
+                </div>
+            )}
 
             <div className="mt-5 grid grid-cols-2 gap-2.5">
                 <Link
