@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useRef } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
@@ -44,7 +44,8 @@ function MonthlyReservationInner() {
     const router = useRouter();
     const childIdFromUrl = useChildIdParam();
 
-    const [phase, setPhase] = useState<Phase>(childIdFromUrl ? "food" : "child");
+    // const [phase, setPhase] = useState<Phase>(childIdFromUrl ? "food" : "child");
+    const [phase, setPhase] = useState<Phase>("child");
 
     const [children, setChildren] = useState<Child[]>([]);
     const [selectedChildId, setSelectedChildId] = useState<string | null>(
@@ -59,6 +60,16 @@ function MonthlyReservationInner() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoadingDays, setIsLoadingDays] = useState(false);
 
+    const hasAutoStarted = useRef(false);
+
+    useEffect(() => {
+        if (childIdFromUrl && !hasAutoStarted.current) {
+            hasAutoStarted.current = true;
+            goToFoodPhase();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [childIdFromUrl]);
+
     useEffect(() => {
         fetch("/api/children")
             .then((res) => res.json())
@@ -72,12 +83,36 @@ function MonthlyReservationInner() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [childIdFromUrl]);
 
+    const hasShownExistingToast = useRef(false);
+
     async function goToFoodPhase() {
+        if (!selectedChildId) return;
+
         setIsLoadingDays(true);
         try {
+            const existingRes = await fetch(
+                `/api/reservations/monthly/existing?childId=${selectedChildId}`
+            );
+            const existingData = await existingRes.json();
+
+            if (!existingData.success) {
+                toast.dismiss();
+                toast.error(existingData.error ?? "خطایی رخ داد");
+                setPhase("child");
+                return;
+            }
+
+            if (existingData.hasExistingReservation) {
+                toast.dismiss();
+                toast.error("شما قبلا برای این فرزند در ماه آینده رزرو کرده‌اید");
+                setPhase("child");
+                return;
+            }
+
             const res = await fetch("/api/reservations/monthly/school-days");
             const data = await res.json();
             if (!data.success) {
+                toast.dismiss();
                 toast.error("خطا در دریافت روزهای ماه آینده");
                 return;
             }
@@ -113,7 +148,6 @@ function MonthlyReservationInner() {
             setIsLoadingDays(false);
         }
     }
-
     function updateDaySelection(
         date: string,
         menuItemId: string,

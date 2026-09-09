@@ -64,6 +64,7 @@ function DailyReservationInner() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoadingDays, setIsLoadingDays] = useState(false);
     const [offDates, setOffDates] = useState<Set<string>>(new Set());
+    const [bookedDates, setBookedDates] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         fetch("/api/children")
@@ -79,15 +80,30 @@ function DailyReservationInner() {
     }, [childIdFromUrl]);
 
     async function goToDaysPhase() {
+        if (!selectedChildId) return;
+
         setIsLoadingDays(true);
         try {
-            const res = await fetch("/api/reservations/daily/available-days");
-            const data = await res.json();
-            if (data.success) {
-                setSelectableDates(new Set(data.selectableDates));
-                setOffDates(new Set(data.offDates));
-                setPhase("days");
+            const [availableRes, bookedRes] = await Promise.all([
+                fetch("/api/reservations/daily/available-days"),
+                fetch(
+                    `/api/reservations/daily/booked-dates?childId=${selectedChildId}`
+                ),
+            ]);
+
+            const availableData = await availableRes.json();
+            const bookedData = await bookedRes.json();
+
+            if (availableData.success) {
+                setSelectableDates(new Set(availableData.selectableDates));
+                setOffDates(new Set(availableData.offDates));
             }
+
+            if (bookedData.success) {
+                setBookedDates(new Set(bookedData.bookedDates));
+            }
+
+            setPhase("days");
         } finally {
             setIsLoadingDays(false);
         }
@@ -253,18 +269,38 @@ function DailyReservationInner() {
 
                     {phase === "days" && (
                         <>
-                            <p className="mb-4 text-sm text-muted-foreground">
+                            <p className="mb-3 text-sm text-muted-foreground">
                                 روزهای مورد نظر را انتخاب کنید. فقط روزهای قابل رزرو فعال
                                 هستند.
                             </p>
+
+                            <div className="mb-4 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="size-3 rounded-full bg-red-300" />
+                                    قرمز یعنی تعطیل
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="size-3 rounded-full bg-blue-300" />
+                                    آبی یعنی قبلا رزرو کرده‌ای
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="size-3 rounded-full bg-muted-foreground" />
+                                    خاکستری یعنی قابل انتخاب نیست
+                                </div>
+                            </div>
+
                             <div className="flex justify-center rounded-3xl border border-border/70 bg-background p-3 shadow-sm sm:p-4">
                                 <Calendar
                                     mode="multiple"
                                     selected={selectedDates}
                                     onSelect={(dates) => setSelectedDates(dates ?? [])}
-                                    disabled={(date) => !selectableDates.has(toDateParam(date))}
+                                    disabled={(date) =>
+                                        !selectableDates.has(toDateParam(date)) ||
+                                        bookedDates.has(toDateParam(date))
+                                    }
                                     modifiers={{
                                         offDay: (date) => offDates.has(toDateParam(date)),
+                                        booked: (date) => bookedDates.has(toDateParam(date)),
                                     }}
                                 />
                             </div>
