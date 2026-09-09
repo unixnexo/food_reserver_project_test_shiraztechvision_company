@@ -19,10 +19,7 @@ import {
     getSchoolDaysInRange,
     getClosedDatesInRange,
 } from "@/lib/school-calendar/is-school-day";
-
-function toDateParam(date: Date): string {
-    return date.toISOString().split("T")[0];
-}
+import { toDateParam } from "@/lib/date/normalize";
 
 export async function GET() {
     const session = await getSession();

@@ -22,10 +22,8 @@ import { getSession } from "@/lib/auth/session";
 import { getCurrentJalaliMonthRange } from "@/lib/reservation/month-range";
 import { isDateSelectableForDailyReservation } from "@/lib/reservation/daily-availability";
 import { getClosedDatesInRange } from "@/lib/school-calendar/is-school-day";
+import { toDateParam } from "@/lib/date/normalize";
 
-function toDateParam(date: Date): string {
-    return date.toISOString().split("T")[0];
-}
 
 export async function GET() {
     const session = await getSession();
@@ -41,12 +39,23 @@ export async function GET() {
     const closedDates = await getClosedDatesInRange(start, end);
 
     const selectableDates: string[] = [];
+    const offDates: string[] = [];
     const cursor = new Date(start);
 
     while (cursor.getTime() <= end.getTime()) {
+        const dayOfWeek = cursor.getUTCDay();
+        const dateParam = toDateParam(cursor);
+
         if (isDateSelectableForDailyReservation(cursor, now, closedDates)) {
-            selectableDates.push(toDateParam(cursor));
+            selectableDates.push(dateParam);
         }
+
+        const isClosed = closedDates.has(dateParam);
+
+        if (dayOfWeek === 4 || dayOfWeek === 5 || isClosed) {
+            offDates.push(dateParam);
+        }
+
         cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
 
@@ -54,5 +63,6 @@ export async function GET() {
         success: true,
         monthRange: { start: toDateParam(start), end: toDateParam(end) },
         selectableDates,
+        offDates,
     });
 }

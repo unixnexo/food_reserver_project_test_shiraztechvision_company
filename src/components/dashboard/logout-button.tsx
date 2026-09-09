@@ -71,7 +71,7 @@ export default function LogoutButton({
                     {isLoggingOut ? (
                         <Loader2 className="size-5 animate-spin" />
                     ) : (
-                        <LogOut className="size-5" />
+                        <LogOut className="size-5 rotate-180" />
                     )}
 
                     {!isMobile && (

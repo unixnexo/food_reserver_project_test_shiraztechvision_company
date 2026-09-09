@@ -3,7 +3,6 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { CalendarRange } from "lucide-react";
 
 import { ChildPicker } from "@/components/reservation/child-picker";
 import { ReservationProgress } from "@/components/reservation/reservation-progress";

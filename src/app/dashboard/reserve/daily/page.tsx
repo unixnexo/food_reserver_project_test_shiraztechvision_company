@@ -13,6 +13,7 @@ import { ReservationSummary } from "@/components/reservation/reservation-summary
 import { StickyContinueBar } from "@/components/reservation/sticky-continue-bar";
 import { useChildIdParam } from "@/lib/hooks/use-child-id-param";
 import { BackButton } from "@/components/shared/back-button";
+import { toDateParam } from "@/lib/date/normalize";
 
 type Child = {
     id: string;
@@ -42,9 +43,6 @@ const STEPS = [
     { key: "summary", label: "خلاصه" },
 ];
 
-function toDateParam(date: Date): string {
-    return date.toISOString().split("T")[0];
-}
 
 function DailyReservationInner() {
     const router = useRouter();
@@ -65,6 +63,7 @@ function DailyReservationInner() {
     const [pricing, setPricing] = useState<Pricing | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoadingDays, setIsLoadingDays] = useState(false);
+    const [offDates, setOffDates] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         fetch("/api/children")
@@ -86,6 +85,7 @@ function DailyReservationInner() {
             const data = await res.json();
             if (data.success) {
                 setSelectableDates(new Set(data.selectableDates));
+                setOffDates(new Set(data.offDates));
                 setPhase("days");
             }
         } finally {
@@ -263,6 +263,9 @@ function DailyReservationInner() {
                                     selected={selectedDates}
                                     onSelect={(dates) => setSelectedDates(dates ?? [])}
                                     disabled={(date) => !selectableDates.has(toDateParam(date))}
+                                    modifiers={{
+                                        offDay: (date) => offDates.has(toDateParam(date)),
+                                    }}
                                 />
                             </div>
                         </>
