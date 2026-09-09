@@ -51,7 +51,7 @@ export async function GET(request: Request) {
         );
     }
 
-    const date = toDateOnly(new Date(`${dateParam}T00:00:00`));
+    const date = toDateOnly(new Date(dateParam));
 
     const orderItem = await prisma.orderItem.findFirst({
         where: { childId, date },

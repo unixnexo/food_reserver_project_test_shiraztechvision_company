@@ -50,9 +50,17 @@ export async function GET(request: Request) {
     const orderItems = await prisma.orderItem.findMany({
         where: {
             childId,
-            date: { gte: start, lte: end },
+            date: {
+                gte: start,
+                lte: end,
+            },
+            order: {
+                status: "PAID",
+            },
         },
-        select: { date: true },
+        select: {
+            date: true,
+        },
     });
 
     return NextResponse.json({
