@@ -1,4 +1,7 @@
-import { Loader2, UtensilsCrossed } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { ChevronDown, Loader2, UtensilsCrossed, Check, AlertCircle } from "lucide-react";
 import { formatPersianDateString } from "@/lib/date/format-persian-date";
 
 type MenuItem = { id: string; food: { id: string; name: string } };
@@ -16,6 +19,7 @@ type DayFoodPickerProps = {
     selection: DaySelection;
     pricing: Pricing | null;
     onSelect: (menuItemId: string, portionType: PortionType) => void;
+    defaultOpen?: boolean;
 };
 
 function formatToman(amount: number | undefined): string {
@@ -23,77 +27,141 @@ function formatToman(amount: number | undefined): string {
     return `${amount.toLocaleString("fa-IR")} تومان`;
 }
 
-export function DayFoodPicker({ selection, pricing, onSelect }: DayFoodPickerProps) {
+export function DayFoodPicker({
+    selection,
+    pricing,
+    onSelect,
+    defaultOpen = false,
+}: DayFoodPickerProps) {
     const isComplete = Boolean(selection.menuItemId && selection.portionType);
+    const [isOpen, setIsOpen] = useState(defaultOpen || !isComplete);
+
+    const selectedFood = selection.availableMenuItems?.find(
+        (mi) => mi.id === selection.menuItemId
+    );
 
     return (
         <div
-            className={`rounded-3xl border p-4 transition-colors sm:p-5 ${isComplete ? "border-[#183D2B]/30 bg-[#EAF3ED]/40" : "border-border/70 bg-background"
+            className={`overflow-hidden rounded-2xl border transition-colors ${isComplete ? "border-[#183D2B]/25" : "border-border/70"
                 }`}
         >
-            <p className="mb-3 text-sm font-semibold">
-                {formatPersianDateString(selection.date)}
-            </p>
-
-            {selection.availableMenuItems === null && (
-                <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
-                    <Loader2 className="size-4 animate-spin" />
-                    در حال دریافت منو...
+            <button
+                type="button"
+                onClick={() => setIsOpen((prev) => !prev)}
+                className={`flex w-full items-center gap-3 px-4 py-3.5 text-right transition-colors ${isComplete ? "bg-[#EAF3ED]/50" : "bg-background"
+                    }`}
+            >
+                <div
+                    className={`flex size-9 shrink-0 items-center justify-center rounded-full ${isComplete
+                            ? "bg-[#183D2B] text-white"
+                            : "bg-amber-50 text-amber-600"
+                        }`}
+                >
+                    {isComplete ? (
+                        <Check className="size-4" />
+                    ) : (
+                        <AlertCircle className="size-4" />
+                    )}
                 </div>
-            )}
 
-            {selection.availableMenuItems?.length === 0 && (
-                <div className="flex items-center gap-2 rounded-2xl bg-muted/50 px-3 py-3 text-sm text-muted-foreground">
-                    <UtensilsCrossed className="size-4 shrink-0" />
-                    برای این روز غذایی تعریف نشده است.
+                <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold">
+                        {formatPersianDateString(selection.date)}
+                    </p>
+
+                    {isComplete ? (
+                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                            {selectedFood?.food.name} ·{" "}
+                            {selection.portionType === "HALF" ? "نیم پرس" : "تمام پرس"}
+                        </p>
+                    ) : (
+                        <p className="mt-0.5 text-xs text-amber-600">
+                            هنوز غذا انتخاب نشده
+                        </p>
+                    )}
                 </div>
-            )}
 
-            <div className="flex flex-col gap-3">
-                {selection.availableMenuItems?.map((mi) => {
-                    const isFoodSelected = selection.menuItemId === mi.id;
+                <ChevronDown
+                    className={`size-4 shrink-0 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""
+                        }`}
+                />
+            </button>
 
-                    return (
-                        <div
-                            key={mi.id}
-                            className={`rounded-2xl border p-3 transition-colors ${isFoodSelected ? "border-[#183D2B] bg-white" : "border-border/60 bg-white"
-                                }`}
-                        >
-                            <p className="mb-2.5 text-sm font-medium">{mi.food.name}</p>
-
-                            <div className="grid grid-cols-2 gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => onSelect(mi.id, "HALF")}
-                                    className={`flex h-12 flex-col items-center justify-center rounded-xl border text-xs font-medium transition-colors ${isFoodSelected && selection.portionType === "HALF"
-                                            ? "border-[#183D2B] bg-[#183D2B] text-white"
-                                            : "border-border/70 text-foreground hover:bg-muted/50"
-                                        }`}
-                                >
-                                    <span>نیم پرس</span>
-                                    <span className="mt-0.5 opacity-80">
-                                        {formatToman(pricing?.halfPortionPrice)}
-                                    </span>
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={() => onSelect(mi.id, "FULL")}
-                                    className={`flex h-12 flex-col items-center justify-center rounded-xl border text-xs font-medium transition-colors ${isFoodSelected && selection.portionType === "FULL"
-                                            ? "border-[#183D2B] bg-[#183D2B] text-white"
-                                            : "border-border/70 text-foreground hover:bg-muted/50"
-                                        }`}
-                                >
-                                    <span>تمام پرس</span>
-                                    <span className="mt-0.5 opacity-80">
-                                        {formatToman(pricing?.fullPortionPrice)}
-                                    </span>
-                                </button>
-                            </div>
+            {isOpen && (
+                <div className="border-t border-border/60 bg-background p-4">
+                    {selection.availableMenuItems === null && (
+                        <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+                            <Loader2 className="size-4 animate-spin" />
+                            در حال دریافت منو...
                         </div>
-                    );
-                })}
-            </div>
+                    )}
+
+                    {selection.availableMenuItems?.length === 0 && (
+                        <div className="flex items-center gap-2 rounded-2xl bg-muted/50 px-3 py-3 text-sm text-muted-foreground">
+                            <UtensilsCrossed className="size-4 shrink-0" />
+                            برای این روز غذایی تعریف نشده است.
+                        </div>
+                    )}
+
+                    <div className="flex flex-col gap-2.5">
+                        {selection.availableMenuItems?.map((mi) => {
+                            const isFoodSelected = selection.menuItemId === mi.id;
+
+                            return (
+                                <div
+                                    key={mi.id}
+                                    className={`rounded-2xl border p-3 transition-colors ${isFoodSelected
+                                            ? "border-[#183D2B] bg-[#EAF3ED]/30"
+                                            : "border-border/60 bg-white"
+                                        }`}
+                                >
+                                    <p className="mb-2.5 text-sm font-medium">
+                                        {mi.food.name}
+                                    </p>
+
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                onSelect(mi.id, "HALF");
+                                                setIsOpen(false);
+                                            }}
+                                            className={`flex h-12 flex-col items-center justify-center rounded-xl border text-xs font-medium transition-colors ${isFoodSelected &&
+                                                    selection.portionType === "HALF"
+                                                    ? "border-[#183D2B] bg-[#183D2B] text-white"
+                                                    : "border-border/70 text-foreground hover:bg-muted/50"
+                                                }`}
+                                        >
+                                            <span>نیم پرس</span>
+                                            <span className="mt-0.5 opacity-80">
+                                                {formatToman(pricing?.halfPortionPrice)}
+                                            </span>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                onSelect(mi.id, "FULL");
+                                                setIsOpen(false);
+                                            }}
+                                            className={`flex h-12 flex-col items-center justify-center rounded-xl border text-xs font-medium transition-colors ${isFoodSelected &&
+                                                    selection.portionType === "FULL"
+                                                    ? "border-[#183D2B] bg-[#183D2B] text-white"
+                                                    : "border-border/70 text-foreground hover:bg-muted/50"
+                                                }`}
+                                        >
+                                            <span>تمام پرس</span>
+                                            <span className="mt-0.5 opacity-80">
+                                                {formatToman(pricing?.fullPortionPrice)}
+                                            </span>
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

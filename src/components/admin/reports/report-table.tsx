@@ -140,7 +140,7 @@ export function ReportTable({ rows, isLoading }: ReportTableProps) {
 
                             <div>
                                 <p className="text-muted-foreground">موبایل والدین</p>
-                                <p className="mt-0.5 font-medium" dir="ltr">
+                                <p className="mt-0.5 font-medium">
                                     {r.parentPhone}
                                 </p>
                             </div>

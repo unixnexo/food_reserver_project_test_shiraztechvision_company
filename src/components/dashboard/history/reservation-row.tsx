@@ -38,7 +38,7 @@ export function ReservationRow({ reservation }: ReservationRowProps) {
                     <span className="text-muted-foreground/50">·</span>
 
                     <span
-                        className={`rounded - full px - 2.5 py - 1 text - [11px] font - medium ${STATUS_STYLES[reservation.orderStatus]} `}
+                        className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${STATUS_STYLES[reservation.orderStatus]} `}
                     >
                         {STATUS_LABELS[reservation.orderStatus]}
                     </span>
