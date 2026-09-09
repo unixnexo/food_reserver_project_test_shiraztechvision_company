@@ -55,6 +55,66 @@ const FOODS = [
 // Single seeded admin account. Same OTP login flow as parents — the
 // `role: ADMIN` field is what gates access to the admin dashboard.
 const ADMIN_PHONE = "09120000000";
+const MENU_START_DATE = new Date("2026-09-22T00:00:00.000Z");
+const MENU_END_DATE = new Date("2026-10-22T00:00:00.000Z");
+
+async function seedMenuItems() {
+    const foods = await prisma.food.findMany({
+        orderBy: {
+            name: "asc",
+        },
+    });
+
+    if (foods.length < 3) {
+        throw new Error("At least 3 foods are required to seed menu items.");
+    }
+
+    const menuItems: {
+        date: Date;
+        foodId: string;
+    }[] = [];
+
+    const currentDate = new Date(MENU_START_DATE);
+
+    let dayIndex = 0;
+
+    while (currentDate <= MENU_END_DATE) {
+        const date = new Date(currentDate);
+
+        // Different number of food choices per day:
+        // 1 food, then 2 foods, then 3 foods, repeated.
+        const foodCount = (dayIndex % 3) + 1;
+
+        for (let i = 0; i < foodCount; i++) {
+            const food = foods[(dayIndex + i) % foods.length];
+
+            menuItems.push({
+                date,
+                foodId: food.id,
+            });
+        }
+
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+        dayIndex++;
+    }
+
+    for (const menuItem of menuItems) {
+        await prisma.menuItem.upsert({
+            where: {
+                date_foodId: {
+                    date: menuItem.date,
+                    foodId: menuItem.foodId,
+                },
+            },
+            update: {},
+            create: menuItem,
+        });
+    }
+
+    console.log(
+        `✅ Seeded ${menuItems.length} menu items from 2026-09-22 to 2026-10-22`
+    );
+}
 
 async function main() {
     console.log("🌱 Seeding...");
@@ -88,6 +148,9 @@ async function main() {
         });
     }
     console.log(`✅ Seeded ${FOODS.length} foods`);
+
+    // --- Menu items ---
+    await seedMenuItems();
 
     // --- Admin user ---
     await prisma.user.upsert({
