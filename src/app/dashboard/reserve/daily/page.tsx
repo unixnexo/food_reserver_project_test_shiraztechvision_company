@@ -3,7 +3,6 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { CalendarDays } from "lucide-react";
 
 import { Calendar } from "@/components/ui/calendar";
 import { ChildPicker } from "@/components/reservation/child-picker";
@@ -14,6 +13,8 @@ import { StickyContinueBar } from "@/components/reservation/sticky-continue-bar"
 import { useChildIdParam } from "@/lib/hooks/use-child-id-param";
 import { BackButton } from "@/components/shared/back-button";
 import { toDateParam } from "@/lib/date/normalize";
+import { CalendarDayButton } from "@/components/ui/calendar";
+import { BookedDayPopover } from "@/components/reservation/booked-day-popover";
 
 type Child = {
     id: string;
@@ -290,7 +291,7 @@ function DailyReservationInner() {
                             </div>
 
                             <div className="flex justify-center rounded-3xl border border-border/70 bg-background p-3 shadow-sm sm:p-4">
-                                <Calendar
+                                {/* <Calendar
                                     mode="multiple"
                                     selected={selectedDates}
                                     onSelect={(dates) => setSelectedDates(dates ?? [])}
@@ -302,7 +303,50 @@ function DailyReservationInner() {
                                         offDay: (date) => offDates.has(toDateParam(date)),
                                         booked: (date) => bookedDates.has(toDateParam(date)),
                                     }}
+                                /> */}
+
+                                <Calendar
+                                    mode="multiple"
+                                    selected={selectedDates}
+                                    onSelect={(dates) => {
+                                        const filtered = (dates ?? []).filter(
+                                            (d) => !bookedDates.has(toDateParam(d))
+                                        );
+
+                                        setSelectedDates(filtered);
+                                    }}
+                                    disabled={(date) => {
+                                        const dateParam = toDateParam(date);
+
+                                        if (bookedDates.has(dateParam)) return false;
+
+                                        return !selectableDates.has(dateParam);
+                                    }}
+                                    modifiers={{
+                                        offDay: (date) => offDates.has(toDateParam(date)),
+                                        booked: (date) => bookedDates.has(toDateParam(date)),
+                                    }}
+                                    components={{
+                                        DayButton: (props) => {
+                                            const dateParam = toDateParam(props.day.date);
+                                            const isBooked = bookedDates.has(dateParam);
+
+                                            if (isBooked && selectedChildId) {
+                                                return (
+                                                    <BookedDayPopover
+                                                        childId={selectedChildId}
+                                                        date={dateParam}
+                                                    >
+                                                        <CalendarDayButton {...props} />
+                                                    </BookedDayPopover>
+                                                );
+                                            }
+
+                                            return <CalendarDayButton {...props} />;
+                                        },
+                                    }}
                                 />
+
                             </div>
                         </>
                     )}
