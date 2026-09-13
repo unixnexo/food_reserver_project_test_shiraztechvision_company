@@ -72,10 +72,13 @@ export function BookedDayPopover({
         : children;
 
     return (
+        // <Popover open={isOpen} onOpenChange={setIsOpen}>
+        //     <PopoverTrigger asChild>
+        //         {trigger}
+        //     </PopoverTrigger>
+
         <Popover open={isOpen} onOpenChange={setIsOpen}>
-            <PopoverTrigger asChild>
-                {trigger}
-            </PopoverTrigger>
+            <PopoverTrigger render={trigger} />
 
             <PopoverContent className="w-64 rounded-2xl p-4" align="center">
                 <p className="mb-3 text-sm font-semibold">

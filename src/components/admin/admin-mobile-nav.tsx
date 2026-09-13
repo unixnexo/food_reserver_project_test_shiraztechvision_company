@@ -31,7 +31,7 @@ export function AdminMobileNav({ items }: AdminMobileNavProps) {
 
     return (
         <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild>
+            {/* <SheetTrigger asChild>
                 <button
                     type="button"
                     aria-label="باز کردن منو"
@@ -39,6 +39,13 @@ export function AdminMobileNav({ items }: AdminMobileNavProps) {
                 >
                     <Menu className="size-5" />
                 </button>
+            </SheetTrigger> */}
+
+            <SheetTrigger
+                aria-label="باز کردن منو"
+                className="flex size-11 items-center justify-center rounded-full border border-border bg-background transition-colors hover:bg-muted active:scale-95 lg:hidden"
+            >
+                <Menu className="size-5" />
             </SheetTrigger>
 
             <SheetContent

@@ -161,15 +161,12 @@ async function main() {
     console.log(`✅ Seeded admin user (${ADMIN_PHONE})`);
 
     // --- Portion pricing (single row) ---
-    // نیم پرس: 680,000 تومن | تمام پرس: 790,000 تومن — as specified.
     const existingPricing = await prisma.portionPricing.findFirst();
     if (!existingPricing) {
         await prisma.portionPricing.create({
             data: {
-                dailyHalfPrice: 680_000,
-                dailyFullPrice: 790_000,
-                monthlyHalfPrice: 650_000,
-                monthlyFullPrice: 760_000,
+                halfPortionPrice: 680_000,
+                fullPortionPrice: 790_000,
             },
         });
         console.log("✅ Seeded portion pricing");

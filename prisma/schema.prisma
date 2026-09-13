@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -49,11 +47,15 @@ model User {
   otpExpiresAt  DateTime?
   otpLastSentAt DateTime?
 
+  walletBalance Int @default(0) // تومن. Never goes negative — enforced in application code inside a transaction.
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  children Child[]
-  orders   Order[]
+  children             Child[]
+  orders               Order[]
+  walletTransactions   WalletTransaction[]
+  walletAdjustmentsMade WalletTransaction[] @relation("WalletTransactionAdmin")
 
   @@map("users")
 }
@@ -152,12 +154,10 @@ model ClosedDay {
 
 // Single-row settings table for portion pricing (تومن, whole numbers).
 model PortionPricing {
-  id                 String   @id @default(cuid())
-  dailyHalfPrice     Int      // نیم پرس روزانه
-  dailyFullPrice     Int      // تمام پرس روزانه
-  monthlyHalfPrice   Int      // نیم پرس ماهانه
-  monthlyFullPrice   Int      // تمام پرس ماهانه
-  updatedAt          DateTime @updatedAt
+  id               String   @id @default(cuid())
+  halfPortionPrice Int      // نیم پرس price in تومن
+  fullPortionPrice Int      // تمام پرس price in تومن
+  updatedAt        DateTime @updatedAt
 
   @@map("portion_pricing")
 }
@@ -213,3 +213,50 @@ model OrderItem {
   @@unique([childId, date]) // DB-level guarantee: one meal per child per day, closes the race window the application-level check alone can't fully close
   @@map("order_items")
 }
+
+// ---------- Wallet ----------
+
+enum WalletTransactionType {
+  CREDIT // money added to the wallet (admin top-up, or a refund)
+  DEBIT  // money removed from the wallet (admin deduction, or spent on an order)
+}
+
+enum WalletTransactionReason {
+  ADMIN_ADJUSTMENT     // manual add/deduct by an admin
+  ORDER_REFUND         // order cancelled (by parent or admin) -> refunded to wallet
+  WALLET_PAYMENT       // wallet used to pay for an order
+}
+
+// Append-only ledger of every wallet balance change. User.walletBalance is
+// a denormalized running total kept in sync with this table inside the
+// same DB transaction as each mutation — this table exists so every
+// change has a reason, an optional admin note, and a timestamp, and so
+// the balance can always be audited/recomputed if ever needed.
+model WalletTransaction {
+  id     String                  @id @default(cuid())
+  userId String
+  user   User                    @relation(fields: [userId], references: [id])
+
+  type   WalletTransactionType
+  reason WalletTransactionReason
+  amount Int // always positive; `type` determines the direction
+
+  note String? // optional توضیحات — required for ADMIN_ADJUSTMENT in the API layer, freeform otherwise
+
+  // Set when an admin performed this action manually (ADMIN_ADJUSTMENT).
+  // Null for system-generated entries (refunds, wallet payments).
+  adminId String?
+  admin   User?   @relation("WalletTransactionAdmin", fields: [adminId], references: [id])
+
+  // Optional link back to the order that caused this entry (refunds,
+  // wallet payments) — null for pure admin adjustments.
+  orderId String?
+
+  balanceAfter Int // wallet balance snapshot immediately after this entry, for easy display without recomputation
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("wallet_transactions")
+}
+

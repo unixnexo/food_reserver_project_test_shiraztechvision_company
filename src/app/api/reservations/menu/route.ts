@@ -53,10 +53,8 @@ export async function GET(request: Request) {
 
     const pricing = pricingRow
         ? {
-            halfPortionPrice:
-                orderType === "DAILY" ? pricingRow.dailyHalfPrice : pricingRow.monthlyHalfPrice,
-            fullPortionPrice:
-                orderType === "DAILY" ? pricingRow.dailyFullPrice : pricingRow.monthlyFullPrice,
+            halfPortionPrice: pricingRow.halfPortionPrice,
+            fullPortionPrice: pricingRow.fullPortionPrice,
         }
         : null;
 

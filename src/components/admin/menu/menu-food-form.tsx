@@ -48,7 +48,7 @@ export function MenuFoodForm({
     return (
         <div className="flex flex-col gap-3 sm:flex-row">
             <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild className="w-full">
+                {/* <PopoverTrigger asChild className="w-full">
                     <Button
                         type="button"
                         variant="outline"
@@ -63,6 +63,20 @@ export function MenuFoodForm({
                                 : "انتخاب غذا")}
                         <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
                     </Button>
+                </PopoverTrigger> */}
+
+                <PopoverTrigger
+                    type="button"
+                    role="combobox"
+                    aria-expanded={open}
+                    disabled={isSubmitting || foods.length === 0}
+                    className="h-12 w-full min-h-12 flex-1 justify-between rounded-2xl border border-border/70 bg-background px-4 text-sm font-normal shadow-none"
+                >
+                    {selectedFood?.name ??
+                        (foods.length === 0
+                            ? "غذای جدیدی برای افزودن وجود ندارد"
+                            : "انتخاب غذا")}
+                    <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
                 </PopoverTrigger>
 
                 <PopoverContent
