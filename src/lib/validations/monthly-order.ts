@@ -14,6 +14,7 @@ export const createMonthlyOrderSchema = z.object({
     items: z
         .array(monthlyOrderItemInputSchema)
         .min(1, "حداقل یک روز باید انتخاب شود"),
+    paymentMethod: z.enum(["GATEWAY", "WALLET"]).default("GATEWAY"),
 });
 
 export type CreateMonthlyOrderInput = z.infer<typeof createMonthlyOrderSchema>;

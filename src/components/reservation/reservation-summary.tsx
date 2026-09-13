@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarCheck2, ChevronDown, Loader2, UtensilsCrossed } from "lucide-react";
+import { CalendarCheck2, ChevronDown, Loader2, UtensilsCrossed, Wallet, CreditCard } from "lucide-react";
 import { formatPersianDateString } from "@/lib/date/format-persian-date";
 
 type MenuItem = { id: string; food: { id: string; name: string } };
 type PortionType = "HALF" | "FULL";
+export type PaymentMethod = "GATEWAY" | "WALLET";
 
 type DaySelection = {
     date: string;
@@ -19,6 +20,9 @@ type ReservationSummaryProps = {
     daySelections: DaySelection[];
     calculateItemPrice: (portionType: PortionType) => number;
     totalAmount: number;
+    walletBalance: number | null;
+    paymentMethod: PaymentMethod;
+    onPaymentMethodChange: (method: PaymentMethod) => void;
 };
 
 export function ReservationSummary({
@@ -26,9 +30,14 @@ export function ReservationSummary({
     daySelections,
     calculateItemPrice,
     totalAmount,
+    walletBalance,
+    paymentMethod,
+    onPaymentMethodChange,
 }: ReservationSummaryProps) {
     const [isOpen, setIsOpen] = useState(false);
     const dayCount = daySelections.length;
+    const hasEnoughWalletBalance =
+        walletBalance !== null && walletBalance >= totalAmount;
 
     return (
         <div className="flex flex-col gap-4">
@@ -106,6 +115,52 @@ export function ReservationSummary({
                             );
                         })}
                     </div>
+                )}
+            </div>
+
+            <div className="flex flex-col gap-2.5">
+                <p className="text-sm font-medium">روش پرداخت</p>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                        type="button"
+                        onClick={() => onPaymentMethodChange("GATEWAY")}
+                        className={`flex flex-col items-center gap-1.5 rounded-2xl border px-3 py-3.5 transition-colors ${paymentMethod === "GATEWAY"
+                                ? "border-[#183D2B] bg-[#EAF3ED]"
+                                : "border-border/70 bg-background"
+                            }`}
+                    >
+                        <CreditCard
+                            className={`size-5 ${paymentMethod === "GATEWAY" ? "text-[#183D2B]" : "text-muted-foreground"}`}
+                        />
+                        <span className="text-xs font-medium">درگاه پرداخت</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => hasEnoughWalletBalance && onPaymentMethodChange("WALLET")}
+                        disabled={!hasEnoughWalletBalance}
+                        className={`flex flex-col items-center gap-1.5 rounded-2xl border px-3 py-3.5 transition-colors ${paymentMethod === "WALLET"
+                                ? "border-[#183D2B] bg-[#EAF3ED]"
+                                : "border-border/70 bg-background"
+                            } ${!hasEnoughWalletBalance ? "cursor-not-allowed opacity-50" : ""}`}
+                    >
+                        <Wallet
+                            className={`size-5 ${paymentMethod === "WALLET" ? "text-[#183D2B]" : "text-muted-foreground"}`}
+                        />
+                        <span className="text-xs font-medium">کیف پول</span>
+                        {walletBalance !== null && (
+                            <span className="text-[11px] text-muted-foreground">
+                                موجودی: {walletBalance.toLocaleString("fa-IR")} تومان
+                            </span>
+                        )}
+                    </button>
+                </div>
+
+                {!hasEnoughWalletBalance && walletBalance !== null && (
+                    <p className="text-xs text-muted-foreground">
+                        موجودی کیف پول برای این سفارش کافی نیست.
+                    </p>
                 )}
             </div>
 

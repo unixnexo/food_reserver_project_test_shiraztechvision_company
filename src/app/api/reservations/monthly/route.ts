@@ -51,7 +51,9 @@ export async function POST(request: Request) {
         session.userId,
         "MONTHLY",
         parsed.data.childId,
-        parsed.data.items
+        parsed.data.items,
+        new Date(),
+        parsed.data.paymentMethod
     );
 
     if (!result.ok) {
@@ -62,7 +64,12 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-        { success: true, orderId: result.orderId, totalAmount: result.totalAmount },
+        {
+            success: true,
+            orderId: result.orderId,
+            totalAmount: result.totalAmount,
+            status: result.status,
+        },
         { status: 201 }
     );
 }

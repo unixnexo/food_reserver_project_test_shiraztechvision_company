@@ -32,7 +32,12 @@ export default async function OrderDetailPage({
         <div className="p-4 max-w-lg mx-auto flex flex-col gap-3">
             <h1 className="text-lg font-bold">سفارش ثبت شد</h1>
             <p className="text-sm text-muted-foreground">
-                وضعیت: {order.status === "PENDING" ? "در انتظار پرداخت" : order.status}
+                وضعیت:{" "}
+                {order.status === "PENDING"
+                    ? "در انتظار پرداخت"
+                    : order.status === "PAID"
+                        ? "پرداخت شده"
+                        : "ناموفق"}
             </p>
             <div className="flex flex-col gap-2">
                 {order.items.map((item) => (
@@ -47,9 +52,11 @@ export default async function OrderDetailPage({
             <p className="font-bold">
                 مجموع: {order.totalAmount.toLocaleString()} تومن
             </p>
-            <p className="text-sm text-muted-foreground">
-                اتصال به درگاه پرداخت زرین‌پال در مرحله بعد اضافه می‌شود.
-            </p>
+            {order.status === "PENDING" && order.paymentMethod === "GATEWAY" && (
+                <p className="text-sm text-muted-foreground">
+                    اتصال به درگاه پرداخت زرین‌پال در مرحله بعد اضافه می‌شود.
+                </p>
+            )}
         </div>
     );
 }

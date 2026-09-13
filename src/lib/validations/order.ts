@@ -15,6 +15,7 @@ export const createDailyOrderSchema = z.object({
     items: z
         .array(orderItemInputSchema)
         .min(1, "حداقل یک روز باید انتخاب شود"),
+    paymentMethod: z.enum(["GATEWAY", "WALLET"]).default("GATEWAY"),
 });
 
 export type CreateDailyOrderInput = z.infer<typeof createDailyOrderSchema>;

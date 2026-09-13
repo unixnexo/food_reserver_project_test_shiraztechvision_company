@@ -30,6 +30,8 @@ import { prisma } from "@/lib/prisma";
 import { verifyPayment } from "@/lib/payment/zarinpal";
 import { generateTrackingCode } from "@/lib/payment/tracking-code";
 import { env } from "@/lib/env";
+import { getSmsSender } from "@/lib/sms/sms-sender";
+import { orderPlacedMessage } from "@/lib/sms/templates";
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -42,6 +44,7 @@ export async function GET(request: Request) {
 
     const order = await prisma.order.findFirst({
         where: { paymentAuthority: authority },
+        include: { user: { select: { phone: true } } },
     });
 
     if (!order) {
@@ -88,6 +91,8 @@ export async function GET(request: Request) {
             trackingCode: generateTrackingCode(),
         },
     });
+
+    await getSmsSender().send(order.user.phone, orderPlacedMessage(order.totalAmount));
 
     return NextResponse.redirect(resultUrl("success"));
 }

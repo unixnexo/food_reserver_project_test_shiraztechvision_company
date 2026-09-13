@@ -47,7 +47,12 @@ export async function POST(request: Request) {
         );
     }
 
-    const result = await createDailyOrder(session.userId, parsed.data);
+    const result = await createDailyOrder(
+        session.userId,
+        parsed.data,
+        new Date(),
+        parsed.data.paymentMethod
+    );
 
     if (!result.ok) {
         return NextResponse.json(
@@ -57,7 +62,12 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-        { success: true, orderId: result.orderId, totalAmount: result.totalAmount },
+        {
+            success: true,
+            orderId: result.orderId,
+            totalAmount: result.totalAmount,
+            status: result.status,
+        },
         { status: 201 }
     );
 }

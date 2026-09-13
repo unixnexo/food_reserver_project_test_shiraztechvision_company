@@ -1,3 +1,5 @@
+// prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -33,6 +35,11 @@ enum OrderStatus {
 enum PortionType {
   HALF // نیم پرس
   FULL // تمام پرس
+}
+
+enum PaymentMethod {
+  GATEWAY // Zarinpal
+  WALLET  // paid instantly from the user's wallet balance
 }
 
 // ---------- Core Auth ----------
@@ -172,9 +179,10 @@ model Order {
   userId String
   user   User   @relation(fields: [userId], references: [id])
 
-  totalAmount Int // sum of all OrderItem prices, in تومن, snapshotted at creation
+  totalAmount   Int           // sum of all OrderItem prices, in تومن, snapshotted at creation
+  paymentMethod PaymentMethod @default(GATEWAY)
 
-  // Zarinpal payment tracking
+  // Zarinpal payment tracking (only relevant when paymentMethod = GATEWAY)
   paymentAuthority  String? // "Authority" returned by Zarinpal on request
   paymentRefId      String? // "RefID" returned by Zarinpal on successful verify
   trackingCode      String? @unique // our own human-friendly code shown to the parent
@@ -259,4 +267,3 @@ model WalletTransaction {
   @@index([userId])
   @@map("wallet_transactions")
 }
-

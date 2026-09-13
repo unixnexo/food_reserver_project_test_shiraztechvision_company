@@ -7,13 +7,15 @@
 
 import { createOrder, type CreateOrderResult } from "./create-order";
 import type { CreateDailyOrderInput } from "@/lib/validations/order";
+import type { PaymentMethod } from "@prisma/client";
 
 export type CreateDailyOrderResult = CreateOrderResult;
 
 export async function createDailyOrder(
     parentId: string,
     input: CreateDailyOrderInput,
-    now: Date = new Date()
+    now: Date = new Date(),
+    paymentMethod: PaymentMethod = "GATEWAY"
 ): Promise<CreateDailyOrderResult> {
-    return createOrder(parentId, "DAILY", input.childId, input.items, now);
+    return createOrder(parentId, "DAILY", input.childId, input.items, now, paymentMethod);
 }

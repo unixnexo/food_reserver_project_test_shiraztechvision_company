@@ -30,6 +30,8 @@ vi.mock("@/lib/prisma", () => ({
         orderItem: { findMany: vi.fn() },
         portionPricing: { findFirst: vi.fn() },
         order: { create: vi.fn() },
+        user: { findUnique: vi.fn(), update: vi.fn() },
+        walletTransaction: { create: vi.fn() },
         $transaction: vi.fn(),
     },
 }));
@@ -66,6 +68,7 @@ function mockDefaults() {
     });
     (prisma.order.create as any).mockResolvedValue({
         id: "order-1",
+        status: "PENDING",
     });
     (prisma.$transaction as any).mockImplementation(async (fn: any) =>
         fn(prisma)
@@ -144,6 +147,7 @@ describe("createOrder", () => {
         if (result.ok) {
             expect(result.totalAmount).toBe(790_000); // FULL portion price
             expect(result.orderId).toBe("order-1");
+            expect(result.status).toBe("PENDING");
         }
     });
 
@@ -195,6 +199,107 @@ describe("createOrder", () => {
             items,
             new Date(2026, 8, 7, 14, 0) // "now" = Sep 7, before cutoff
         );
+        expect(result.ok).toBe(false);
+        if (!result.ok) expect(result.status).toBe(400);
+    });
+});
+
+describe("createOrder — WALLET payment", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mockDefaults();
+    });
+
+    const validItems = [
+        { date: VALID_DATE, menuItemId: MENU_ITEM_ID, portionType: "FULL" as const },
+    ];
+
+    it("succeeds and debits the wallet when balance is sufficient", async () => {
+        (prisma.user.findUnique as any)
+            .mockResolvedValueOnce({ walletBalance: 1_000_000 }) // balance check inside the tx
+            .mockResolvedValueOnce({ phone: "09120000000" }); // post-tx phone lookup for the SMS
+        (prisma.user.update as any).mockResolvedValue({});
+        (prisma.order.create as any).mockResolvedValue({
+            id: "order-wallet-1",
+            status: "PAID",
+        });
+        (prisma.walletTransaction.create as any).mockResolvedValue({
+            id: "wallet-tx-1",
+        });
+
+        const result = await createOrder(
+            PARENT_ID,
+            "DAILY",
+            CHILD_ID,
+            validItems,
+            NOW,
+            "WALLET"
+        );
+
+        expect(result.ok).toBe(true);
+        if (result.ok) {
+            expect(result.status).toBe("PAID");
+            expect(result.totalAmount).toBe(790_000);
+        }
+
+        // Balance debited by exactly the order total.
+        expect(prisma.user.update).toHaveBeenCalledWith({
+            where: { id: PARENT_ID },
+            data: { walletBalance: 1_000_000 - 790_000 },
+        });
+
+        // Ledger entry written with the right reason/direction.
+        expect(prisma.walletTransaction.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: expect.objectContaining({
+                    userId: PARENT_ID,
+                    type: "DEBIT",
+                    reason: "WALLET_PAYMENT",
+                    amount: 790_000,
+                    orderId: "order-wallet-1",
+                    balanceAfter: 1_000_000 - 790_000,
+                }),
+            })
+        );
+    });
+
+    it("rejects with a 400 when wallet balance is insufficient", async () => {
+        (prisma.user.findUnique as any).mockResolvedValue({
+            walletBalance: 100_000, // less than the 790,000 order total
+        });
+
+        const result = await createOrder(
+            PARENT_ID,
+            "DAILY",
+            CHILD_ID,
+            validItems,
+            NOW,
+            "WALLET"
+        );
+
+        expect(result.ok).toBe(false);
+        if (!result.ok) {
+            expect(result.status).toBe(400);
+            expect(result.error).toContain("موجودی");
+        }
+
+        // Balance must NOT be touched when the debit is rejected.
+        expect(prisma.user.update).not.toHaveBeenCalled();
+        expect(prisma.walletTransaction.create).not.toHaveBeenCalled();
+    });
+
+    it("rejects with a 400 when the user record is missing", async () => {
+        (prisma.user.findUnique as any).mockResolvedValue(null);
+
+        const result = await createOrder(
+            PARENT_ID,
+            "DAILY",
+            CHILD_ID,
+            validItems,
+            NOW,
+            "WALLET"
+        );
+
         expect(result.ok).toBe(false);
         if (!result.ok) expect(result.status).toBe(400);
     });
