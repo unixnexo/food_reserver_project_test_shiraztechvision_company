@@ -59,6 +59,8 @@ export async function GET(request: Request) {
         jalaliMonth: searchParams.get("jalaliMonth") ?? undefined,
         orderStatus: searchParams.get("orderStatus") ?? undefined,
         orderType: searchParams.get("orderType") ?? undefined,
+        page: searchParams.get("page") ?? undefined,
+        pageSize: searchParams.get("pageSize") ?? undefined,
     });
 
     if (!parsed.success) {
@@ -95,15 +97,24 @@ export async function GET(request: Request) {
         };
     }
 
-    const orderItems = await prisma.orderItem.findMany({
-        where,
-        include: {
-            child: { include: { school: true, grade: true } },
-            menuItem: { include: { food: true } },
-            order: { include: { user: true } },
-        },
-        orderBy: { date: "asc" },
-    });
+    const [totalCount, totalPaidAggregate, orderItems] = await Promise.all([
+        prisma.orderItem.count({ where }),
+        prisma.orderItem.aggregate({
+            where: { ...where, order: { ...(where.order as object ?? {}), status: "PAID" } },
+            _sum: { unitPrice: true },
+        }),
+        prisma.orderItem.findMany({
+            where,
+            include: {
+                child: { include: { school: true, grade: true } },
+                menuItem: { include: { food: true } },
+                order: { include: { user: true } },
+            },
+            orderBy: { date: "asc" },
+            skip: (filters.page - 1) * filters.pageSize,
+            take: filters.pageSize,
+        }),
+    ]);
 
     const rows = orderItems.map((item) => ({
         date: item.date.toISOString().split("T")[0],
@@ -120,5 +131,15 @@ export async function GET(request: Request) {
         orderPlacedAt: item.order.createdAt.toISOString(),
     }));
 
-    return NextResponse.json({ success: true, rows });
+    return NextResponse.json({
+        success: true,
+        rows,
+        totalPaidAmount: totalPaidAggregate._sum.unitPrice ?? 0,
+        pagination: {
+            page: filters.page,
+            pageSize: filters.pageSize,
+            totalCount,
+            totalPages: Math.max(Math.ceil(totalCount / filters.pageSize), 1),
+        },
+    });
 }

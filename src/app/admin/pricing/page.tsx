@@ -1,3 +1,243 @@
+// "use client";
+
+// import { useEffect, useState } from "react";
+// import { Loader2, Save, Tags } from "lucide-react";
+// import toast from "react-hot-toast";
+// import { formatPrice } from "@/lib/format-price";
+
+// import { Button } from "@/components/ui/button";
+
+// export default function AdminPricingPage() {
+//     const [halfPortionPrice, setHalfPortionPrice] = useState("");
+//     const [fullPortionPrice, setFullPortionPrice] = useState("");
+//     const [isLoading, setIsLoading] = useState(true);
+//     const [isSubmitting, setIsSubmitting] = useState(false);
+
+
+//     useEffect(() => {
+//         async function loadPricing() {
+//             try {
+//                 const res = await fetch("/api/admin/portion-pricing");
+//                 const data = await res.json();
+
+//                 if (!res.ok || !data.success || !data.pricing) {
+//                     toast.error(data.error || "خطا در دریافت قیمت‌ها");
+//                     return;
+//                 }
+
+//                 setHalfPortionPrice(
+//                     String(data.pricing.halfPortionPrice)
+//                 );
+
+//                 setFullPortionPrice(
+//                     String(data.pricing.fullPortionPrice)
+//                 );
+//             } catch {
+//                 toast.error("خطا در ارتباط با سرور");
+//             } finally {
+//                 setIsLoading(false);
+//             }
+//         }
+
+//         loadPricing();
+//     }, []);
+
+//     async function handleSave() {
+//         const halfPrice = Number(halfPortionPrice);
+//         const fullPrice = Number(fullPortionPrice);
+
+//         if (!halfPortionPrice || !fullPortionPrice) {
+//             toast.error("لطفاً هر دو قیمت را وارد کنید");
+//             return;
+//         }
+
+//         if (
+//             !Number.isInteger(halfPrice) ||
+//             !Number.isInteger(fullPrice) ||
+//             halfPrice < 0 ||
+//             fullPrice < 0
+//         ) {
+//             toast.error("قیمت‌ها باید عدد صحیح باشند");
+//             return;
+//         }
+
+//         setIsSubmitting(true);
+
+//         try {
+//             const res = await fetch("/api/admin/portion-pricing", {
+//                 method: "PUT",
+//                 headers: {
+//                     "Content-Type": "application/json",
+//                 },
+//                 body: JSON.stringify({
+//                     halfPortionPrice: halfPrice,
+//                     fullPortionPrice: fullPrice,
+//                 }),
+//             });
+
+//             const data = await res.json();
+
+//             if (!res.ok || !data.success) {
+//                 toast.error(data.error || "بروزرسانی قیمت‌ها انجام نشد");
+//                 return;
+//             }
+
+//             toast.success("قیمت‌ها با موفقیت بروزرسانی شد");
+//         } catch {
+//             toast.error("خطا در ارتباط با سرور");
+//         } finally {
+//             setIsSubmitting(false);
+//         }
+//     }
+
+//     if (isLoading) {
+//         return (
+//             <div className="mx-auto flex min-h-[300px] w-full max-w-6xl items-center justify-center">
+//                 <Loader2 className="size-6 animate-spin text-[#183D2B]" />
+//             </div>
+//         );
+//     }
+
+//     return (
+//         <div className="mx-auto w-full max-w-6xl">
+//             <div className="mb-8">
+//                 <div className="mb-2 flex items-center gap-3">
+//                     <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-[#EAF3ED] text-[#183D2B]">
+//                         <Tags className="size-6" />
+//                     </div>
+
+//                     <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+//                         قیمت‌گذاری
+//                     </h1>
+//                 </div>
+
+//                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
+//                     قیمت نیم پرس و تمام پرس را برای سفارش‌های جدید تنظیم کنید.
+//                 </p>
+//             </div>
+
+//             <section className="max-w-2xl rounded-3xl border border-border/70 bg-background p-5 shadow-sm sm:p-8">
+//                 <div className="mb-8">
+//                     <h2 className="text-lg font-semibold">
+//                         قیمت پرس‌ها
+//                     </h2>
+
+//                     <p className="mt-1 text-sm leading-6 text-muted-foreground">
+//                         قیمت‌ها به تومان و به‌صورت عدد صحیح وارد شوند.
+//                     </p>
+//                 </div>
+
+//                 <div className="space-y-8">
+//                     <div>
+//                         <label
+//                             htmlFor="half"
+//                             className="mb-3 block text-base font-medium text-muted-foreground"
+//                         >
+//                             نیم پرس
+//                         </label>
+
+//                         <div className="flex items-end gap-3">
+//                             <input
+//                                 id="half"
+//                                 type="text"
+//                                 inputMode="numeric"
+//                                 value={formatPrice(halfPortionPrice)}
+//                                 onChange={(e) => {
+//                                     const value = e.target.value.replace(/\D/g, "");
+//                                     setHalfPortionPrice(value);
+//                                 }}
+//                                 disabled={isSubmitting}
+//                                 dir="ltr"
+//                                 className="h-16 min-w-0 flex-1 border-0 border-b-2 border-border bg-transparent px-0 text-xl font-medium tracking-wide outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary sm:text-2xl"
+//                                 placeholder="مثلاً ۵۰٬۰۰۰"
+//                             />
+
+//                             <span className="mb-3 shrink-0 text-sm font-medium text-muted-foreground">
+//                                 تومان
+//                             </span>
+//                         </div>
+//                     </div>
+
+//                     <div>
+//                         <label
+//                             htmlFor="full"
+//                             className="mb-3 block text-base font-medium text-muted-foreground"
+//                         >
+//                             تمام پرس
+//                         </label>
+
+//                         <div className="flex items-end gap-3">
+//                             <input
+//                                 id="full"
+//                                 type="text"
+//                                 inputMode="numeric"
+//                                 value={formatPrice(fullPortionPrice)}
+//                                 onChange={(e) => {
+//                                     const value = e.target.value.replace(/\D/g, "");
+//                                     setFullPortionPrice(value);
+//                                 }}
+//                                 disabled={isSubmitting}
+//                                 dir="ltr"
+//                                 className="h-16 min-w-0 flex-1 border-0 border-b-2 border-border bg-transparent px-0 text-xl font-medium tracking-wide outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary sm:text-2xl"
+//                                 placeholder="مثلاً ۸۰٬۰۰۰"
+//                             />
+
+//                             <span className="mb-3 shrink-0 text-sm font-medium text-muted-foreground">
+//                                 تومان
+//                             </span>
+//                         </div>
+//                     </div>
+//                 </div>
+
+//                 <div className="mt-10 border-t border-border/60 pt-6">
+//                     <div className="mb-5 rounded-2xl bg-muted/40 px-4 py-3">
+//                         <p className="text-xs leading-6 text-muted-foreground">
+//                             تغییر قیمت فقط روی سفارش‌های جدید اعمال می‌شود و
+//                             قیمت سفارش‌های قبلی تغییر نخواهد کرد.
+//                         </p>
+//                     </div>
+
+//                     <Button
+//                         type="button"
+//                         onClick={handleSave}
+//                         disabled={
+//                             isSubmitting ||
+//                             !halfPortionPrice ||
+//                             !fullPortionPrice
+//                         }
+//                         className="h-12 w-full rounded-2xl bg-[#183D2B] text-white hover:bg-[#24543C]"
+//                     >
+//                         {isSubmitting ? (
+//                             <Loader2 className="size-4 animate-spin" />
+//                         ) : (
+//                             <Save className="size-4" />
+//                         )}
+
+//                         ذخیره قیمت‌ها
+//                     </Button>
+//                 </div>
+//             </section>
+//         </div>
+//     );
+
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -8,11 +248,12 @@ import { formatPrice } from "@/lib/format-price";
 import { Button } from "@/components/ui/button";
 
 export default function AdminPricingPage() {
-    const [halfPortionPrice, setHalfPortionPrice] = useState("");
-    const [fullPortionPrice, setFullPortionPrice] = useState("");
+    const [dailyHalfPrice, setDailyHalfPrice] = useState("");
+    const [dailyFullPrice, setDailyFullPrice] = useState("");
+    const [monthlyHalfPrice, setMonthlyHalfPrice] = useState("");
+    const [monthlyFullPrice, setMonthlyFullPrice] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
-
 
     useEffect(() => {
         async function loadPricing() {
@@ -25,13 +266,10 @@ export default function AdminPricingPage() {
                     return;
                 }
 
-                setHalfPortionPrice(
-                    String(data.pricing.halfPortionPrice)
-                );
-
-                setFullPortionPrice(
-                    String(data.pricing.fullPortionPrice)
-                );
+                setDailyHalfPrice(String(data.pricing.dailyHalfPrice));
+                setDailyFullPrice(String(data.pricing.dailyFullPrice));
+                setMonthlyHalfPrice(String(data.pricing.monthlyHalfPrice));
+                setMonthlyFullPrice(String(data.pricing.monthlyFullPrice));
             } catch {
                 toast.error("خطا در ارتباط با سرور");
             } finally {
@@ -43,20 +281,24 @@ export default function AdminPricingPage() {
     }, []);
 
     async function handleSave() {
-        const halfPrice = Number(halfPortionPrice);
-        const fullPrice = Number(fullPortionPrice);
+        const values = {
+            dailyHalfPrice: Number(dailyHalfPrice),
+            dailyFullPrice: Number(dailyFullPrice),
+            monthlyHalfPrice: Number(monthlyHalfPrice),
+            monthlyFullPrice: Number(monthlyFullPrice),
+        };
 
-        if (!halfPortionPrice || !fullPortionPrice) {
-            toast.error("لطفاً هر دو قیمت را وارد کنید");
+        if (
+            !dailyHalfPrice ||
+            !dailyFullPrice ||
+            !monthlyHalfPrice ||
+            !monthlyFullPrice
+        ) {
+            toast.error("لطفاً همه قیمت‌ها را وارد کنید");
             return;
         }
 
-        if (
-            !Number.isInteger(halfPrice) ||
-            !Number.isInteger(fullPrice) ||
-            halfPrice < 0 ||
-            fullPrice < 0
-        ) {
+        if (Object.values(values).some((v) => !Number.isInteger(v) || v < 0)) {
             toast.error("قیمت‌ها باید عدد صحیح باشند");
             return;
         }
@@ -69,10 +311,7 @@ export default function AdminPricingPage() {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                    halfPortionPrice: halfPrice,
-                    fullPortionPrice: fullPrice,
-                }),
+                body: JSON.stringify(values),
             });
 
             const data = await res.json();
@@ -98,6 +337,50 @@ export default function AdminPricingPage() {
         );
     }
 
+    function PriceInput({
+        id,
+        label,
+        value,
+        onChange,
+    }: {
+        id: string;
+        label: string;
+        value: string;
+        onChange: (v: string) => void;
+    }) {
+        return (
+            <div>
+                <label
+                    htmlFor={id}
+                    className="mb-3 block text-base font-medium text-muted-foreground"
+                >
+                    {label}
+                </label>
+
+                <div className="flex items-end gap-3">
+                    <input
+                        id={id}
+                        type="text"
+                        inputMode="numeric"
+                        value={formatPrice(value)}
+                        onChange={(e) => {
+                            const v = e.target.value.replace(/\D/g, "");
+                            onChange(v);
+                        }}
+                        disabled={isSubmitting}
+                        dir="ltr"
+                        className="h-16 min-w-0 flex-1 border-0 border-b-2 border-border bg-transparent px-0 text-xl font-medium tracking-wide outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary sm:text-2xl"
+                        placeholder="مثلاً ۵۰٬۰۰۰"
+                    />
+
+                    <span className="mb-3 shrink-0 text-sm font-medium text-muted-foreground">
+                        تومان
+                    </span>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="mx-auto w-full max-w-6xl">
             <div className="mb-8">
@@ -112,112 +395,88 @@ export default function AdminPricingPage() {
                 </div>
 
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    قیمت نیم پرس و تمام پرس را برای سفارش‌های جدید تنظیم کنید.
+                    قیمت نیم پرس و تمام پرس را برای سفارش‌های روزانه و ماهانه به‌طور جداگانه تنظیم کنید.
                 </p>
             </div>
 
-            <section className="max-w-2xl rounded-3xl border border-border/70 bg-background p-5 shadow-sm sm:p-8">
-                <div className="mb-8">
-                    <h2 className="text-lg font-semibold">
-                        قیمت پرس‌ها
-                    </h2>
-
-                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                        قیمت‌ها به تومان و به‌صورت عدد صحیح وارد شوند.
-                    </p>
-                </div>
-
-                <div className="space-y-8">
-                    <div>
-                        <label
-                            htmlFor="half"
-                            className="mb-3 block text-base font-medium text-muted-foreground"
-                        >
-                            نیم پرس
-                        </label>
-
-                        <div className="flex items-end gap-3">
-                            <input
-                                id="half"
-                                type="text"
-                                inputMode="numeric"
-                                value={formatPrice(halfPortionPrice)}
-                                onChange={(e) => {
-                                    const value = e.target.value.replace(/\D/g, "");
-                                    setHalfPortionPrice(value);
-                                }}
-                                disabled={isSubmitting}
-                                dir="ltr"
-                                className="h-16 min-w-0 flex-1 border-0 border-b-2 border-border bg-transparent px-0 text-xl font-medium tracking-wide outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary sm:text-2xl"
-                                placeholder="مثلاً ۵۰٬۰۰۰"
-                            />
-
-                            <span className="mb-3 shrink-0 text-sm font-medium text-muted-foreground">
-                                تومان
-                            </span>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label
-                            htmlFor="full"
-                            className="mb-3 block text-base font-medium text-muted-foreground"
-                        >
-                            تمام پرس
-                        </label>
-
-                        <div className="flex items-end gap-3">
-                            <input
-                                id="full"
-                                type="text"
-                                inputMode="numeric"
-                                value={formatPrice(fullPortionPrice)}
-                                onChange={(e) => {
-                                    const value = e.target.value.replace(/\D/g, "");
-                                    setFullPortionPrice(value);
-                                }}
-                                disabled={isSubmitting}
-                                dir="ltr"
-                                className="h-16 min-w-0 flex-1 border-0 border-b-2 border-border bg-transparent px-0 text-xl font-medium tracking-wide outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary sm:text-2xl"
-                                placeholder="مثلاً ۸۰٬۰۰۰"
-                            />
-
-                            <span className="mb-3 shrink-0 text-sm font-medium text-muted-foreground">
-                                تومان
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="mt-10 border-t border-border/60 pt-6">
-                    <div className="mb-5 rounded-2xl bg-muted/40 px-4 py-3">
-                        <p className="text-xs leading-6 text-muted-foreground">
-                            تغییر قیمت فقط روی سفارش‌های جدید اعمال می‌شود و
-                            قیمت سفارش‌های قبلی تغییر نخواهد کرد.
+            <div className="grid gap-6 lg:grid-cols-2">
+                <section className="rounded-3xl border border-border/70 bg-background p-5 shadow-sm sm:p-8">
+                    <div className="mb-8">
+                        <h2 className="text-lg font-semibold">قیمت سفارش روزانه</h2>
+                        <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                            قیمت‌ها به تومان و به‌صورت عدد صحیح وارد شوند.
                         </p>
                     </div>
 
-                    <Button
-                        type="button"
-                        onClick={handleSave}
-                        disabled={
-                            isSubmitting ||
-                            !halfPortionPrice ||
-                            !fullPortionPrice
-                        }
-                        className="h-12 w-full rounded-2xl bg-[#183D2B] text-white hover:bg-[#24543C]"
-                    >
-                        {isSubmitting ? (
-                            <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                            <Save className="size-4" />
-                        )}
+                    <div className="space-y-8">
+                        <PriceInput
+                            id="dailyHalf"
+                            label="نیم پرس"
+                            value={dailyHalfPrice}
+                            onChange={setDailyHalfPrice}
+                        />
+                        <PriceInput
+                            id="dailyFull"
+                            label="تمام پرس"
+                            value={dailyFullPrice}
+                            onChange={setDailyFullPrice}
+                        />
+                    </div>
+                </section>
 
-                        ذخیره قیمت‌ها
-                    </Button>
+                <section className="rounded-3xl border border-border/70 bg-background p-5 shadow-sm sm:p-8">
+                    <div className="mb-8">
+                        <h2 className="text-lg font-semibold">قیمت سفارش ماهانه</h2>
+                        <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                            قیمت‌ها به تومان و به‌صورت عدد صحیح وارد شوند.
+                        </p>
+                    </div>
+
+                    <div className="space-y-8">
+                        <PriceInput
+                            id="monthlyHalf"
+                            label="نیم پرس"
+                            value={monthlyHalfPrice}
+                            onChange={setMonthlyHalfPrice}
+                        />
+                        <PriceInput
+                            id="monthlyFull"
+                            label="تمام پرس"
+                            value={monthlyFullPrice}
+                            onChange={setMonthlyFullPrice}
+                        />
+                    </div>
+                </section>
+            </div>
+
+            <div className="mt-6 max-w-2xl">
+                <div className="mb-5 rounded-2xl bg-muted/40 px-4 py-3">
+                    <p className="text-xs leading-6 text-muted-foreground">
+                        تغییر قیمت فقط روی سفارش‌های جدید اعمال می‌شود و
+                        قیمت سفارش‌های قبلی تغییر نخواهد کرد.
+                    </p>
                 </div>
-            </section>
+
+                <Button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={
+                        isSubmitting ||
+                        !dailyHalfPrice ||
+                        !dailyFullPrice ||
+                        !monthlyHalfPrice ||
+                        !monthlyFullPrice
+                    }
+                    className="h-12 w-full rounded-2xl bg-[#183D2B] text-white hover:bg-[#24543C]"
+                >
+                    {isSubmitting ? (
+                        <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                        <Save className="size-4" />
+                    )}
+                    ذخیره قیمت‌ها
+                </Button>
+            </div>
         </div>
     );
-
 }

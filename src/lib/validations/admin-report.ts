@@ -15,6 +15,8 @@ export const adminReportFilterSchema = z.object({
     jalaliMonth: z.coerce.number().int().min(1).max(12).optional(),
     orderStatus: z.enum(["PENDING", "PAID", "FAILED"]).optional(),
     orderType: z.enum(["DAILY", "MONTHLY"]).optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(200).default(50),
 });
 
 export type AdminReportFilterInput = z.infer<typeof adminReportFilterSchema>;

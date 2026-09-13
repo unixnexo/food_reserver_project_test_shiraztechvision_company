@@ -36,7 +36,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 
-export async function GET() {
+const DEFAULT_PAGE_SIZE = 20;
+
+export async function GET(request: Request) {
     const session = await getSession();
     if (!session) {
         return NextResponse.json(
@@ -45,15 +47,29 @@ export async function GET() {
         );
     }
 
-    const orderItems = await prisma.orderItem.findMany({
-        where: { order: { userId: session.userId } },
-        include: {
-            child: true,
-            menuItem: { include: { food: true } },
-            order: true,
-        },
-        orderBy: { date: "asc" },
-    });
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(Number(searchParams.get("page")) || 1, 1);
+    const pageSize = Math.min(
+        Math.max(Number(searchParams.get("pageSize")) || DEFAULT_PAGE_SIZE, 1),
+        100
+    );
+
+    const where = { order: { userId: session.userId } };
+
+    const [totalCount, orderItems] = await Promise.all([
+        prisma.orderItem.count({ where }),
+        prisma.orderItem.findMany({
+            where,
+            include: {
+                child: true,
+                menuItem: { include: { food: true } },
+                order: true,
+            },
+            orderBy: { date: "asc" },
+            skip: (page - 1) * pageSize,
+            take: pageSize,
+        }),
+    ]);
 
     const reservations = orderItems.map((item) => ({
         date: item.date.toISOString().split("T")[0],
@@ -68,5 +84,14 @@ export async function GET() {
         orderPlacedAt: item.order.createdAt.toISOString(),
     }));
 
-    return NextResponse.json({ success: true, reservations });
+    return NextResponse.json({
+        success: true,
+        reservations,
+        pagination: {
+            page,
+            pageSize,
+            totalCount,
+            totalPages: Math.max(Math.ceil(totalCount / pageSize), 1),
+        },
+    });
 }

@@ -134,11 +134,11 @@ export async function createOrder(
         };
     }
 
+    const halfPrice = type === "DAILY" ? pricing.dailyHalfPrice : pricing.monthlyHalfPrice;
+    const fullPrice = type === "DAILY" ? pricing.dailyFullPrice : pricing.monthlyFullPrice;
+
     const itemsWithPrice = items.map((item) => {
-        const unitPrice =
-            item.portionType === "HALF"
-                ? pricing.halfPortionPrice
-                : pricing.fullPortionPrice;
+        const unitPrice = item.portionType === "HALF" ? halfPrice : fullPrice;
         return {
             childId,
             date: toDateOnly(item.date),

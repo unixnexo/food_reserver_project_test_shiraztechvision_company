@@ -166,11 +166,13 @@ async function main() {
     if (!existingPricing) {
         await prisma.portionPricing.create({
             data: {
-                halfPortionPrice: 680_000,
-                fullPortionPrice: 790_000,
+                dailyHalfPrice: 680_000,
+                dailyFullPrice: 790_000,
+                monthlyHalfPrice: 650_000,
+                monthlyFullPrice: 760_000,
             },
         });
-        console.log("✅ Seeded portion pricing (680,000 / 790,000 تومن)");
+        console.log("✅ Seeded portion pricing");
     } else {
         console.log("↩️  Portion pricing already exists, skipping");
     }

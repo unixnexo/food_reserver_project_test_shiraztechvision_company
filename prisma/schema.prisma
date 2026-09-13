@@ -152,10 +152,12 @@ model ClosedDay {
 
 // Single-row settings table for portion pricing (تومن, whole numbers).
 model PortionPricing {
-  id               String   @id @default(cuid())
-  halfPortionPrice Int      // نیم پرس price in تومن
-  fullPortionPrice Int      // تمام پرس price in تومن
-  updatedAt        DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  dailyHalfPrice     Int      // نیم پرس روزانه
+  dailyFullPrice     Int      // تمام پرس روزانه
+  monthlyHalfPrice   Int      // نیم پرس ماهانه
+  monthlyFullPrice   Int      // تمام پرس ماهانه
+  updatedAt          DateTime @updatedAt
 
   @@map("portion_pricing")
 }

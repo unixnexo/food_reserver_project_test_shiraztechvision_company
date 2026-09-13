@@ -32,6 +32,7 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get("date");
+    const orderType = searchParams.get("orderType") === "MONTHLY" ? "MONTHLY" : "DAILY";
 
     if (!dateParam) {
         return NextResponse.json(
@@ -42,13 +43,22 @@ export async function GET(request: Request) {
 
     const date = toDateOnly(new Date(dateParam));
 
-    const [menuItems, pricing] = await Promise.all([
+    const [menuItems, pricingRow] = await Promise.all([
         prisma.menuItem.findMany({
             where: { date },
             include: { food: true },
         }),
         prisma.portionPricing.findFirst(),
     ]);
+
+    const pricing = pricingRow
+        ? {
+            halfPortionPrice:
+                orderType === "DAILY" ? pricingRow.dailyHalfPrice : pricingRow.monthlyHalfPrice,
+            fullPortionPrice:
+                orderType === "DAILY" ? pricingRow.dailyFullPrice : pricingRow.monthlyFullPrice,
+        }
+        : null;
 
     return NextResponse.json({ success: true, menuItems, pricing });
 }

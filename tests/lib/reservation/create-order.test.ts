@@ -9,6 +9,15 @@
 // changes (new query patterns added to create-order.ts), these mocks need
 // matching updates — that's an expected maintenance cost of this
 // approach, traded for not needing a real test database in CI.
+//
+// IMPORTANT: `createOrder` defaults `now` to `new Date()` (the real
+// system clock) when not passed explicitly. VALID_DATE below is only
+// "tomorrow" relative to a specific moment, so every test that exercises
+// the happy path (or anything past the date-validity check) MUST pass an
+// explicit `NOW` that keeps VALID_DATE inside the bookable window —
+// otherwise the suite silently starts failing once the real calendar
+// date catches up to/passes VALID_DATE. Never rely on the default clock
+// in this file.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createOrder } from "@/lib/reservation/create-order";
@@ -31,8 +40,13 @@ const PARENT_ID = "parent-1";
 const CHILD_ID = "child-1";
 const MENU_ITEM_ID = "menu-item-1";
 
-// A Monday well inside the earliest-bookable window, per cutoff rules.
-const VALID_DATE = new Date(Date.UTC(2026, 8, 14)); // 2026-09-14, a Monday
+// Fixed "now" used by every test unless a test deliberately overrides it.
+// 2026-09-13, 14:00 Iran time — well before the 5pm cutoff, so "tomorrow"
+// (VALID_DATE) is bookable and still inside the current Jalali month.
+const NOW = new Date(Date.UTC(2026, 8, 13, 10, 30)); // 10:30 UTC = 14:00 Iran (UTC+3:30)
+
+// The "tomorrow" relative to NOW, per cutoff rules — a Monday.
+const VALID_DATE = new Date(Date.UTC(2026, 8, 14)); // 2026-09-14
 
 function mockDefaults() {
     (prisma.child.findUnique as any).mockResolvedValue({
@@ -45,8 +59,10 @@ function mockDefaults() {
     ]);
     (prisma.orderItem.findMany as any).mockResolvedValue([]);
     (prisma.portionPricing.findFirst as any).mockResolvedValue({
-        halfPortionPrice: 680_000,
-        fullPortionPrice: 790_000,
+        dailyHalfPrice: 680_000,
+        dailyFullPrice: 790_000,
+        monthlyHalfPrice: 650_000,
+        monthlyFullPrice: 760_000,
     });
     (prisma.order.create as any).mockResolvedValue({
         id: "order-1",
@@ -67,7 +83,7 @@ describe("createOrder", () => {
     ];
 
     it("rejects when no items are provided", async () => {
-        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, []);
+        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, [], NOW);
         expect(result.ok).toBe(false);
         if (!result.ok) expect(result.status).toBe(400);
     });
@@ -77,21 +93,21 @@ describe("createOrder", () => {
             id: CHILD_ID,
             parentId: "someone-else",
         });
-        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, validItems);
+        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, validItems, NOW);
         expect(result.ok).toBe(false);
         if (!result.ok) expect(result.status).toBe(404);
     });
 
     it("rejects when the child does not exist", async () => {
         (prisma.child.findUnique as any).mockResolvedValue(null);
-        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, validItems);
+        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, validItems, NOW);
         expect(result.ok).toBe(false);
         if (!result.ok) expect(result.status).toBe(404);
     });
 
     it("rejects when a menu item does not exist", async () => {
         (prisma.menuItem.findMany as any).mockResolvedValue([]);
-        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, validItems);
+        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, validItems, NOW);
         expect(result.ok).toBe(false);
         if (!result.ok) expect(result.status).toBe(404);
     });
@@ -101,7 +117,7 @@ describe("createOrder", () => {
         (prisma.menuItem.findMany as any).mockResolvedValue([
             { id: MENU_ITEM_ID, date: wrongDate, foodId: "food-1" },
         ]);
-        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, validItems);
+        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, validItems, NOW);
         expect(result.ok).toBe(false);
         if (!result.ok) expect(result.status).toBe(400);
     });
@@ -110,20 +126,20 @@ describe("createOrder", () => {
         (prisma.orderItem.findMany as any).mockResolvedValue([
             { date: VALID_DATE },
         ]);
-        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, validItems);
+        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, validItems, NOW);
         expect(result.ok).toBe(false);
         if (!result.ok) expect(result.status).toBe(409);
     });
 
     it("rejects when portion pricing is not configured", async () => {
         (prisma.portionPricing.findFirst as any).mockResolvedValue(null);
-        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, validItems);
+        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, validItems, NOW);
         expect(result.ok).toBe(false);
         if (!result.ok) expect(result.status).toBe(500);
     });
 
     it("succeeds with valid input and snapshots the correct price", async () => {
-        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, validItems);
+        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, validItems, NOW);
         expect(result.ok).toBe(true);
         if (result.ok) {
             expect(result.totalAmount).toBe(790_000); // FULL portion price
@@ -144,7 +160,7 @@ describe("createOrder", () => {
             { date: secondDate, menuItemId: secondMenuItemId, portionType: "HALF" as const },
         ];
 
-        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, items);
+        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, items, NOW);
         expect(result.ok).toBe(true);
         if (result.ok) {
             expect(result.totalAmount).toBe(790_000 + 680_000);
@@ -159,7 +175,7 @@ describe("createOrder", () => {
         );
         (prisma.$transaction as any).mockRejectedValue(constraintError);
 
-        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, validItems);
+        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, validItems, NOW);
         expect(result.ok).toBe(false);
         if (!result.ok) expect(result.status).toBe(409);
     });
