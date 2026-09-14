@@ -3,10 +3,12 @@ import { ReservationDateGroup } from "./reservation-date-group";
 
 type ReservationHistoryListProps = {
     reservations: Reservation[];
+    onCancelled: () => void;
 };
 
 export function ReservationHistoryList({
     reservations,
+    onCancelled,
 }: ReservationHistoryListProps) {
     const groupedByDate = reservations.reduce<Record<string, Reservation[]>>(
         (groups, reservation) => {
@@ -27,6 +29,7 @@ export function ReservationHistoryList({
                     key={date}
                     date={date}
                     reservations={groupedByDate[date]}
+                    onCancelled={onCancelled}
                 />
             ))}
         </div>

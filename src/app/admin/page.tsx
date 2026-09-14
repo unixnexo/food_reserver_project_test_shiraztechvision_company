@@ -186,7 +186,8 @@ type ReportRow = {
     amount: number;
     orderId: string;
     orderType: "DAILY" | "MONTHLY";
-    orderStatus: "PENDING" | "PAID" | "FAILED";
+    orderStatus: "PENDING" | "PAID" | "FAILED" | "CANCELLED";
+    itemStatus: "ACTIVE" | "CANCELLED";
     parentPhone: string;
     orderPlacedAt: string;
 };

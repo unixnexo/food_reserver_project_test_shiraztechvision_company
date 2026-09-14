@@ -21,7 +21,8 @@ type ReportRow = {
     amount: number;
     orderId: string;
     orderType: "DAILY" | "MONTHLY";
-    orderStatus: "PENDING" | "PAID" | "FAILED";
+    orderStatus: "PENDING" | "PAID" | "FAILED" | "CANCELLED";
+    itemStatus: "ACTIVE" | "CANCELLED";
     parentPhone: string;
     orderPlacedAt: string;
 };
@@ -30,12 +31,14 @@ const STATUS_LABELS: Record<ReportRow["orderStatus"], string> = {
     PENDING: "در انتظار پرداخت",
     PAID: "پرداخت شده",
     FAILED: "ناموفق",
+    CANCELLED: "لغو شده",
 };
 
 const STATUS_STYLES: Record<ReportRow["orderStatus"], string> = {
     PENDING: "bg-amber-50 text-amber-700",
     PAID: "bg-[#EAF3ED] text-[#183D2B]",
     FAILED: "bg-red-50 text-red-700",
+    CANCELLED: "bg-muted text-muted-foreground",
 };
 
 function formatToman(amount: number): string {

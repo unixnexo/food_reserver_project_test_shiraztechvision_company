@@ -35,7 +35,10 @@
 //     isSchoolDaySync,
 //     getClosedDatesInRange,
 // } from "@/lib/school-calendar/is-school-day";
-// import { Prisma, type OrderType } from "@prisma/client";
+// import { Prisma, type OrderType, type PaymentMethod } from "@prisma/client";
+// import { generateTrackingCode } from "@/lib/payment/tracking-code";
+// import { getSmsSender } from "@/lib/sms/sms-sender";
+// import { orderPlacedMessage } from "@/lib/sms/templates";
 
 // export type OrderItemInput = {
 //     date: Date;
@@ -44,7 +47,7 @@
 // };
 
 // export type CreateOrderResult =
-//     | { ok: true; orderId: string; totalAmount: number }
+//     | { ok: true; orderId: string; totalAmount: number; status: "PENDING" | "PAID" }
 //     | { ok: false; error: string; status: number };
 
 // export async function createOrder(
@@ -52,7 +55,8 @@
 //     type: OrderType,
 //     childId: string,
 //     items: OrderItemInput[],
-//     now: Date = new Date()
+//     now: Date = new Date(),
+//     paymentMethod: PaymentMethod = "GATEWAY"
 // ): Promise<CreateOrderResult> {
 //     if (items.length === 0) {
 //         return { ok: false, error: "حداقل یک روز باید انتخاب شود", status: 400 };
@@ -134,6 +138,8 @@
 //         };
 //     }
 
+//     // const halfPrice = type === "DAILY" ? pricing.dailyHalfPrice : pricing.monthlyHalfPrice;
+//     // const fullPrice = type === "DAILY" ? pricing.dailyFullPrice : pricing.monthlyFullPrice;
 //     const halfPrice = pricing.halfPortionPrice;
 //     const fullPrice = pricing.fullPortionPrice;
 
@@ -155,11 +161,61 @@
 //         // atomically — if the unique constraint rejects ANY item (a
 //         // concurrent request won the race for that child+date), the whole
 //         // order creation rolls back rather than leaving a partial order.
+//         // For WALLET payments, the balance check + debit + ledger entry all
+//         // happen inside this SAME transaction, so a wallet debit can never
+//         // succeed while the order creation fails (or vice versa).
 //         const order = await prisma.$transaction(async (tx) => {
+//             if (paymentMethod === "WALLET") {
+//                 const user = await tx.user.findUnique({
+//                     where: { id: parentId },
+//                     select: { walletBalance: true },
+//                 });
+
+//                 if (!user || user.walletBalance < totalAmount) {
+//                     // Thrown (not returned) so it propagates out of the
+//                     // transaction and rolls back cleanly; caught below and
+//                     // converted into the normal discriminated-result shape.
+//                     throw new InsufficientWalletBalanceError();
+//                 }
+
+//                 const newBalance = user.walletBalance - totalAmount;
+
+//                 await tx.user.update({
+//                     where: { id: parentId },
+//                     data: { walletBalance: newBalance },
+//                 });
+
+//                 const createdOrder = await tx.order.create({
+//                     data: {
+//                         type,
+//                         status: "PAID",
+//                         paymentMethod: "WALLET",
+//                         userId: parentId,
+//                         totalAmount,
+//                         trackingCode: generateTrackingCode(),
+//                         items: { create: itemsWithPrice },
+//                     },
+//                 });
+
+//                 await tx.walletTransaction.create({
+//                     data: {
+//                         userId: parentId,
+//                         type: "DEBIT",
+//                         reason: "WALLET_PAYMENT",
+//                         amount: totalAmount,
+//                         orderId: createdOrder.id,
+//                         balanceAfter: newBalance,
+//                     },
+//                 });
+
+//                 return createdOrder;
+//             }
+
 //             return tx.order.create({
 //                 data: {
 //                     type,
 //                     status: "PENDING",
+//                     paymentMethod: "GATEWAY",
 //                     userId: parentId,
 //                     totalAmount,
 //                     items: { create: itemsWithPrice },
@@ -167,8 +223,33 @@
 //             });
 //         });
 
-//         return { ok: true, orderId: order.id, totalAmount };
+//         if (order.status === "PAID") {
+//             // Wallet payments are confirmed instantly — send the "order
+//             // placed" SMS right away (gateway orders get this from the
+//             // payment callback instead, once Zarinpal actually confirms).
+//             const user = await prisma.user.findUnique({
+//                 where: { id: parentId },
+//                 select: { phone: true },
+//             });
+//             if (user) {
+//                 await getSmsSender().send(user.phone, orderPlacedMessage(totalAmount));
+//             }
+//         }
+
+//         return {
+//             ok: true,
+//             orderId: order.id,
+//             totalAmount,
+//             status: order.status as "PENDING" | "PAID",
+//         };
 //     } catch (error) {
+//         if (error instanceof InsufficientWalletBalanceError) {
+//             return {
+//                 ok: false,
+//                 error: "موجودی کیف پول کافی نیست",
+//                 status: 400,
+//             };
+//         }
 //         // P2002 = unique constraint violation. With items created via a
 //         // nested `create`, this fires when @@unique([childId, date]) on
 //         // OrderItem is violated — i.e. a concurrent request for the same
@@ -187,6 +268,17 @@
 //         throw error;
 //     }
 // }
+
+// class InsufficientWalletBalanceError extends Error { }
+
+
+
+
+
+
+
+
+
 
 
 
@@ -311,7 +403,7 @@ export async function createOrder(
     // OrderItem (see schema.prisma) is what actually guarantees correctness
     // under concurrency; the try/catch below handles that constraint firing.
     const existingItemsForChild = await prisma.orderItem.findMany({
-        where: { childId, date: { in: dates } },
+        where: { childId, date: { in: dates }, status: "ACTIVE" },
     });
 
     if (existingItemsForChild.length > 0) {
@@ -334,10 +426,8 @@ export async function createOrder(
         };
     }
 
-    // const halfPrice = type === "DAILY" ? pricing.dailyHalfPrice : pricing.monthlyHalfPrice;
-    // const fullPrice = type === "DAILY" ? pricing.dailyFullPrice : pricing.monthlyFullPrice;
-    const halfPrice = pricing.halfPortionPrice;
-    const fullPrice = pricing.fullPortionPrice;
+    const halfPrice = type === "DAILY" ? pricing.dailyHalfPrice : pricing.monthlyHalfPrice;
+    const fullPrice = type === "DAILY" ? pricing.dailyFullPrice : pricing.monthlyFullPrice;
 
     const itemsWithPrice = items.map((item) => {
         const unitPrice = item.portionType === "HALF" ? halfPrice : fullPrice;

@@ -59,6 +59,7 @@ export async function GET(request: Request) {
         jalaliMonth: searchParams.get("jalaliMonth") ?? undefined,
         orderStatus: searchParams.get("orderStatus") ?? undefined,
         orderType: searchParams.get("orderType") ?? undefined,
+        includeCancelled: searchParams.get("includeCancelled") ?? undefined,
         page: searchParams.get("page") ?? undefined,
         pageSize: searchParams.get("pageSize") ?? undefined,
     });
@@ -73,6 +74,14 @@ export async function GET(request: Request) {
     const filters = parsed.data;
 
     const where: Prisma.OrderItemWhereInput = {};
+
+    // By default, cancelled items are excluded from the report — they were
+    // never actually served and their money was refunded, so counting them
+    // would overstate both headcount and the paid total. Pass
+    // ?includeCancelled=true to see them (with itemStatus shown per row).
+    if (!filters.includeCancelled) {
+        where.status = "ACTIVE";
+    }
 
     if (filters.date) {
         where.date = toDateOnly(filters.date);
@@ -100,7 +109,11 @@ export async function GET(request: Request) {
     const [totalCount, totalPaidAggregate, orderItems] = await Promise.all([
         prisma.orderItem.count({ where }),
         prisma.orderItem.aggregate({
-            where: { ...where, order: { ...(where.order as object ?? {}), status: "PAID" } },
+            where: {
+                ...where,
+                status: "ACTIVE", // refunded/cancelled money was never actually collected — never count it
+                order: { ...(where.order as object ?? {}), status: "PAID" },
+            },
             _sum: { unitPrice: true },
         }),
         prisma.orderItem.findMany({
@@ -127,6 +140,7 @@ export async function GET(request: Request) {
         orderId: item.orderId,
         orderType: item.order.type,
         orderStatus: item.order.status,
+        itemStatus: item.status,
         parentPhone: item.order.user.phone,
         orderPlacedAt: item.order.createdAt.toISOString(),
     }));

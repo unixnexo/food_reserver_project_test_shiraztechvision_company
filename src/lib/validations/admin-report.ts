@@ -13,8 +13,9 @@ export const adminReportFilterSchema = z.object({
     // from the client would require the client to do Jalali math itself.
     jalaliYear: z.coerce.number().int().optional(),
     jalaliMonth: z.coerce.number().int().min(1).max(12).optional(),
-    orderStatus: z.enum(["PENDING", "PAID", "FAILED"]).optional(),
+    orderStatus: z.enum(["PENDING", "PAID", "FAILED", "CANCELLED"]).optional(),
     orderType: z.enum(["DAILY", "MONTHLY"]).optional(),
+    includeCancelled: z.coerce.boolean().optional(),
     page: z.coerce.number().int().min(1).default(1),
     pageSize: z.coerce.number().int().min(1).max(200).default(50),
 });

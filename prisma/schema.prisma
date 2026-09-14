@@ -30,6 +30,12 @@ enum OrderStatus {
   PENDING   // created, awaiting payment
   PAID      // payment verified
   FAILED    // payment failed / cancelled at gateway
+  CANCELLED // every item was cancelled (fully refunded, nothing left to serve)
+}
+
+enum OrderItemStatus {
+  ACTIVE    // will be served
+  CANCELLED // parent or admin cancelled this specific day; refunded if the order was PAID
 }
 
 enum PortionType {
@@ -160,11 +166,14 @@ model ClosedDay {
 }
 
 // Single-row settings table for portion pricing (تومن, whole numbers).
+// Daily and monthly reservations are priced independently.
 model PortionPricing {
-  id               String   @id @default(cuid())
-  halfPortionPrice Int      // نیم پرس price in تومن
-  fullPortionPrice Int      // تمام پرس price in تومن
-  updatedAt        DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  dailyHalfPrice     Int      // نیم پرس روزانه
+  dailyFullPrice     Int      // تمام پرس روزانه
+  monthlyHalfPrice   Int      // نیم پرس ماهانه
+  monthlyFullPrice   Int      // تمام پرس ماهانه
+  updatedAt          DateTime @updatedAt
 
   @@map("portion_pricing")
 }
@@ -214,11 +223,23 @@ model OrderItem {
   portionType PortionType
   unitPrice   Int         // price snapshot at time of order (تومن) — protects historical accuracy
 
+  status       OrderItemStatus @default(ACTIVE)
+  cancelledAt  DateTime?
+  cancelReason String?         // توضیحات — required when an admin cancels, optional/omitted for parent self-cancel
+  cancelledBy  String?         // userId of whoever cancelled it (parent or admin) — null if never cancelled
+
   createdAt DateTime @default(now())
 
   @@index([orderId])
   @@index([childId])
-  @@unique([childId, date]) // DB-level guarantee: one meal per child per day, closes the race window the application-level check alone can't fully close
+  // NOTE: the DB-level uniqueness guarantee here only applies to ACTIVE
+  // rows — see the partial unique index added via raw SQL in the
+  // migration (order_items_child_date_active_unique). A cancelled item
+  // must NOT block rebooking the same child+date. This @@unique below is
+  // intentionally REMOVED from the Prisma-managed schema (kept only as
+  // the fast-path app-level check in create-order.ts); the actual DB
+  // constraint lives in the partial index instead, since Prisma doesn't
+  // support partial/filtered unique constraints natively.
   @@map("order_items")
 }
 

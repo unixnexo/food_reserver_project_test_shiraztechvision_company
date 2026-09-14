@@ -7,7 +7,7 @@
 // session (any role).
 //
 // GET QUERY PARAM:
-//   ?date=YYYY-MM-DD
+//   ?date=YYYY-MM-DD&orderType=DAILY|MONTHLY
 //
 // GET RESPONSE (200):
 //   {
@@ -53,8 +53,14 @@ export async function GET(request: Request) {
 
     const pricing = pricingRow
         ? {
-            halfPortionPrice: pricingRow.halfPortionPrice,
-            fullPortionPrice: pricingRow.fullPortionPrice,
+            halfPortionPrice:
+                orderType === "MONTHLY"
+                    ? pricingRow.monthlyHalfPrice
+                    : pricingRow.dailyHalfPrice,
+            fullPortionPrice:
+                orderType === "MONTHLY"
+                    ? pricingRow.monthlyFullPrice
+                    : pricingRow.dailyFullPrice,
         }
         : null;
 

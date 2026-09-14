@@ -6,11 +6,13 @@ import { CalendarDays } from "lucide-react";
 type ReservationDateGroupProps = {
     date: string;
     reservations: Reservation[];
+    onCancelled: () => void;
 };
 
 export function ReservationDateGroup({
     date,
     reservations,
+    onCancelled,
 }: ReservationDateGroupProps) {
     return (
         <section className="overflow-hidden rounded-3xl border border-border/70 bg-background shadow-sm">
@@ -31,10 +33,11 @@ export function ReservationDateGroup({
             </div>
 
             <div className="divide-y divide-border/60">
-                {reservations.map((reservation, index) => (
+                {reservations.map((reservation) => (
                     <ReservationRow
-                        key={`${reservation.orderId} -${index} `}
+                        key={reservation.orderItemId}
                         reservation={reservation}
+                        onCancelled={onCancelled}
                     />
                 ))}
             </div>

@@ -35,6 +35,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
+import { canModifyReservationForDate } from "@/lib/reservation/modification-cutoff";
 
 const DEFAULT_PAGE_SIZE = 20;
 
@@ -71,7 +72,10 @@ export async function GET(request: Request) {
         }),
     ]);
 
+    const now = new Date();
+
     const reservations = orderItems.map((item) => ({
+        orderItemId: item.id,
         date: item.date.toISOString().split("T")[0],
         childId: item.childId,
         childName: `${item.child.firstName} ${item.child.lastName}`,
@@ -81,7 +85,12 @@ export async function GET(request: Request) {
         orderId: item.orderId,
         orderType: item.order.type,
         orderStatus: item.order.status,
+        itemStatus: item.status,
         orderPlacedAt: item.order.createdAt.toISOString(),
+        canCancel:
+            item.status === "ACTIVE" &&
+            item.order.status === "PAID" &&
+            canModifyReservationForDate(item.date, now),
     }));
 
     return NextResponse.json({
