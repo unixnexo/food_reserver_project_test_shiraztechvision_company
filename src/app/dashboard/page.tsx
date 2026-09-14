@@ -30,14 +30,27 @@ export default async function DashboardPage() {
             <DashboardHeader phone={user?.phone ?? ""} />
 
             <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                        سلام 👋
-                    </h1>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
-                        فرزندانت را مدیریت کن و غذای روزانه یا ماهانه رزرو کن.
-                    </p>
-                </div>
+                <div className="mb-8 overflow-hidden rounded-2xl border border-[#DCE3DE] bg-white shadow-sm">
+    <div className="h-1 bg-[#183D2B]" />
+
+    <div className="px-5 py-5 sm:px-6">
+        <div className="flex items-center gap-4">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF3ED] text-[#183D2B] text-lg">
+                👋
+            </div>
+
+            <div>
+                <h1 className="text-xl font-bold tracking-tight text-[#183D2B] sm:text-2xl">
+                    سلام
+                </h1>
+
+                <p className="mt-1 text-sm text-muted-foreground">
+                    فرزندانت را مدیریت کن و غذای روزانه یا ماهانه رزرو کن.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
 
                 {children.length === 0 ? (
                     <EmptyChildrenState />

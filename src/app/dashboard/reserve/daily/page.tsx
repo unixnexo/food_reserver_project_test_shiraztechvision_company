@@ -245,27 +245,65 @@ function DailyReservationInner() {
     );
 
     return (
-        <div className="min-h-dvh bg-[#F7F5F0]">
-            <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col px-4 py-6 sm:px-6 sm:py-10">
-                <div className="mb-6 flex items-center gap-4">
-                    <BackButton
-                        onClick={
-                            phase === "child"
-                                ? undefined
-                                : () => {
-                                    if (phase === "days") setPhase("child");
-                                    else if (phase === "food") setPhase("days");
-                                    else if (phase === "summary") setPhase("food");
-                                }
-                        }
-                    />
+        // <div className="min-h-dvh bg-[#F7F5F0]">
+        //     <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col px-4 py-6 sm:px-6 sm:py-10">
+        //         <div className="mb-6 flex items-center gap-4">
+        //             <BackButton
+        //                 onClick={
+        //                     phase === "child"
+        //                         ? undefined
+        //                         : () => {
+        //                             if (phase === "days") setPhase("child");
+        //                             else if (phase === "food") setPhase("days");
+        //                             else if (phase === "summary") setPhase("food");
+        //                         }
+        //                 }
+        //             />
 
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-lg font-bold sm:text-xl">رزرو غذای روزانه</h1>
+        //             <div className="flex items-center gap-3">
+        //                 <h1 className="text-lg font-bold sm:text-xl">رزرو غذای روزانه</h1>
+        //             </div>
+        //         </div>
+
+        //         <ReservationProgress steps={STEPS} currentIndex={currentStepIndex} />
+
+
+        <div className="min-h-dvh bg-[#F4F6F3]">
+            <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col px-4 py-6 sm:px-6 sm:py-10">
+                {/* Header */}
+                <div className="mb-6 overflow-hidden rounded-2xl border border-[#DCE3DE] bg-white shadow-sm">
+                    <div className="h-1 bg-[#183D2B]" />
+
+                    <div className="flex items-center gap-4 px-5 py-5 sm:px-6">
+                        <BackButton
+                            className="size-11 shrink-0 rounded-xl"
+                            onClick={
+                                phase === "child"
+                                    ? undefined
+                                    : () => {
+                                        if (phase === "days") setPhase("child");
+                                        else if (phase === "food") setPhase("days");
+                                        else if (phase === "summary") setPhase("food");
+                                    }
+                            }
+                        />
+
+                        <div>
+                            <h1 className="text-xl font-bold tracking-tight text-[#183D2B] sm:text-2xl">
+                                رزرو غذای روزانه
+                            </h1>
+
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                غذای مورد نظر فرزندت را برای امروز رزرو کن.
+                            </p>
+                        </div>
                     </div>
                 </div>
 
-                <ReservationProgress steps={STEPS} currentIndex={currentStepIndex} />
+                <ReservationProgress
+                    steps={STEPS}
+                    currentIndex={currentStepIndex}
+                />
 
                 <div className="flex-1">
                     {phase === "child" && (
@@ -295,7 +333,7 @@ function DailyReservationInner() {
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                     <span className="size-3 rounded-full bg-blue-300" />
-                                    آبی یعنی قبلا رزرو کرده‌ای
+                                    آبی یعنی قبلا رزرو کردی
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                     <span className="size-3 rounded-full bg-muted-foreground" />

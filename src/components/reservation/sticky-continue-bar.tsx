@@ -17,7 +17,7 @@ export function StickyContinueBar({
     isLoading,
 }: StickyContinueBarProps) {
     return (
-        <div className="sticky bottom-0 -mx-4 mt-6 border-t border-border/70 bg-background/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+        <div className="sticky bottom-0 z-50 -mx-4 mt-6 border-t border-border/70 bg-background/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
             <div className="flex gap-3">
                 {onBack && (
                     <Button
