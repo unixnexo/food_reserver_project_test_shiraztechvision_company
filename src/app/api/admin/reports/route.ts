@@ -138,6 +138,7 @@ export async function GET(request: Request) {
         foodName: item.menuItem.food.name,
         portionType: item.portionType,
         amount: item.unitPrice,
+        note: item.note,
         orderId: item.orderId,
         orderType: item.order.type,
         orderStatus: item.order.status,

@@ -278,8 +278,6 @@
 
 
 
-
-
 // src/lib/reservation/create-order.ts
 //
 // Shared core logic for creating a reservation order — used by BOTH the
@@ -326,6 +324,7 @@ export type OrderItemInput = {
     date: Date;
     menuItemId: string;
     portionType: "HALF" | "FULL";
+    note?: string;
 };
 
 export type CreateOrderResult =
@@ -431,6 +430,7 @@ export async function createOrder(
             menuItemId: item.menuItemId,
             portionType: item.portionType,
             unitPrice,
+            note: item.note?.trim() || null,
         };
     });
 

@@ -1,7 +1,7 @@
 // "use client";
 
 // import { useState } from "react";
-// import { Loader2, X } from "lucide-react";
+// import { Loader2, X, Pencil } from "lucide-react";
 // import toast from "react-hot-toast";
 // import type { Reservation } from "@/app/dashboard/history/page";
 // import {
@@ -15,10 +15,11 @@
 //     AlertDialogTitle,
 // } from "@/components/ui/alert-dialog";
 // import { Button } from "@/components/ui/button";
+// import { EditReservationDialog } from "./edit-reservation-dialog";
 
 // type ReservationRowProps = {
 //     reservation: Reservation;
-//     onCancelled: () => void;
+//     onCancelled: () => void | Promise<void>;
 // };
 
 // const STATUS_LABELS: Record<Reservation["orderStatus"], string> = {
@@ -41,6 +42,7 @@
 
 //     const [isDialogOpen, setIsDialogOpen] = useState(false);
 //     const [isCancelling, setIsCancelling] = useState(false);
+//     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
 //     async function handleConfirmCancel() {
 //         setIsCancelling(true);
@@ -107,7 +109,7 @@
 //                 </div>
 //             </div>
 
-//             <div className="flex shrink-0 items-center gap-3">
+//             <div className="flex shrink-0 items-center gap-2">
 //                 <div className="text-left">
 //                     <p className="text-sm font-semibold tabular-nums">
 //                         {reservation.amount.toLocaleString("fa-IR")}
@@ -115,6 +117,18 @@
 
 //                     <p className="mt-1 text-xs text-muted-foreground">تومان</p>
 //                 </div>
+
+//                 {reservation.canEdit && (
+//                     <Button
+//                         type="button"
+//                         variant="ghost"
+//                         size="icon"
+//                         onClick={() => setIsEditDialogOpen(true)}
+//                         className="size-9 shrink-0 rounded-xl text-muted-foreground hover:bg-[#EAF3ED] hover:text-[#183D2B]"
+//                     >
+//                         <Pencil className="size-4" />
+//                     </Button>
+//                 )}
 
 //                 {reservation.canCancel && (
 //                     <Button
@@ -161,13 +175,16 @@
 //                     </AlertDialogFooter>
 //                 </AlertDialogContent>
 //             </AlertDialog>
+
+//             <EditReservationDialog
+//                 orderItemId={isEditDialogOpen ? reservation.orderItemId : null}
+//                 childName={reservation.childName}
+//                 onClose={() => setIsEditDialogOpen(false)}
+//                 onEdited={onCancelled}
+//             />
 //         </div>
 //     );
 // }
-
-
-
-
 
 
 
@@ -285,6 +302,12 @@ export function ReservationRow({ reservation, onChanged }: ReservationRowProps) 
                         </span>
                     )}
                 </div>
+
+                {reservation.note && (
+                    <p className="mt-2 rounded-xl bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                        توضیحات: {reservation.note}
+                    </p>
+                )}
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
@@ -363,3 +386,4 @@ export function ReservationRow({ reservation, onChanged }: ReservationRowProps) 
         </div>
     );
 }
+

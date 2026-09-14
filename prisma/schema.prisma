@@ -223,6 +223,8 @@ model OrderItem {
   portionType PortionType
   unitPrice   Int         // price snapshot at time of order (تومن) — protects historical accuracy
 
+  note String?
+
   status       OrderItemStatus @default(ACTIVE)
   cancelledAt  DateTime?
   cancelReason String?         // توضیحات — required when an admin cancels, optional/omitted for parent self-cancel
@@ -288,3 +290,7 @@ model WalletTransaction {
   @@index([userId])
   @@map("wallet_transactions")
 }
+
+
+
+
