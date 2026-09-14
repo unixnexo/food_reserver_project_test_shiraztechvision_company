@@ -59,7 +59,7 @@ export function LandingHero() {
                     className="order-2 flex flex-col items-center text-center lg:items-start lg:text-right"
                 >
                     <h1 className="max-w-xl text-4xl font-bold leading-[1.35] tracking-tight sm:text-5xl lg:text-6xl">
-                        وعده؛ غذای فرزندت،
+                        غذای فرزندت
                         <br />
                         سر وقت و بی‌دغدغه.
                     </h1>
@@ -70,13 +70,26 @@ export function LandingHero() {
                         تا روز مدرسه با خیال راحت منتظرش باشی.
                     </p>
 
-                    <Link
+                    {/* <Link
                         href="/login"
                         className="mt-8 inline-flex h-14 items-center justify-center gap-3 rounded-full bg-primary px-7 text-base font-medium text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
                     >
                         شروع کنیم
                         <ArrowLeft className="size-5" />
+                    </Link> */}
+
+                    <Link
+                        href="/login"
+                        className="group relative mt-8 inline-flex h-14 items-center justify-center gap-3 overflow-hidden rounded-full bg-[#183D2B] px-8 text-base font-semibold text-white shadow-[0_8px_24px_rgba(24,61,43,0.22)] transition-all hover:-translate-y-0.5 hover:bg-[#24543C] hover:shadow-[0_12px_30px_rgba(24,61,43,0.28)] active:translate-y-0"
+                    >
+                        {/* Shine */}
+                        <span className="absolute inset-y-0 -left-16 w-10 -skew-x-12 bg-white/20 blur-sm transition-all duration-700 group-hover:left-[120%]" />
+
+                        <span className="relative z-10">شروع کنیم</span>
+
+                        <ArrowLeft className="relative z-10 size-5 transition-transform duration-300 group-hover:-translate-x-1" />
                     </Link>
+
                 </motion.div>
             </motion.div>
         </section>

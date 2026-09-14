@@ -31,12 +31,16 @@ export function PhoneStep({
             className="flex flex-col"
         >
             <div className="mb-12">
-                <h1 className="text-3xl font-bold leading-[1.4] tracking-tight">
-                    ورود به وعده
+                <h1 className="font-black leading-[1.4] tracking-tight text-[#183D2B]">
+                    ورود به{" "}
+                    <span className="inline-flex items-baseline">
+                        <span className="text-2xl tracking-[-0.04em]">food</span>
+                        <span className="text-4xl tracking-[-0.05em]">PH</span>
+                    </span>
                 </h1>
 
                 <p className="mt-4 text-base leading-7 text-muted-foreground">
-                    با شماره موبایلت وارد شو
+                   شماره موبایلت رو وارد کن تا کد تایید برات ارسال بشه.
                 </p>
             </div>
 
@@ -65,9 +69,9 @@ export function PhoneStep({
                     className="h-14 w-full border-0 border-b-2 border-border bg-transparent px-0 text-xl font-medium tracking-wider outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary"
                 />
 
-                <p className="mt-4 text-sm leading-7 text-muted-foreground">
+                {/* <p className="mt-4 text-sm leading-7 text-muted-foreground">
                     شماره موبایلت رو وارد کن تا کد تایید برات ارسال بشه.
-                </p>
+                </p> */}
             </div>
 
             <Button

@@ -19,9 +19,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="fa"
       dir="rtl"
-      className={`${iranSans.variable} h-full antialiased`}
+      className={`${iranSans.variable} h-full antialiased bg-[#F4F6F3]`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col bg-[#F4F6F3]">
         {children}
         <Toaster position="top-center" />
       </body>

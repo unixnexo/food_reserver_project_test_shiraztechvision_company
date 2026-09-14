@@ -172,45 +172,107 @@ export default function LoginPage() {
         setPhase("phone");
     }
 
-    return (
-        <main className="min-h-screen bg-background">
-            <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 pb-10 pt-6">
-                {/* Back */}
-                <BackButton />
+    // return (
+    //     <main className="min-h-screen">
+    //         <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 pb-10 pt-6">
+    //             {/* Back */}
+    //             <BackButton />
 
-                {/* Content */}
-                <div className="flex flex-1 flex-col justify-center pb-16 pt-4">
-                    <AnimatePresence mode="wait">
-                        {phase === "phone" ? (
-                            <PhoneStep
-                                key="phone"
-                                phone={phone}
-                                isSubmitting={isSubmitting}
-                                onPhoneChange={(value) =>
-                                    setPhone(normalizePhone(value))
-                                }
-                                onSubmit={handleSendOtp}
-                                variants={pageVariants}
-                            />
-                        ) : (
-                            <OtpStep
-                                key="otp"
-                                phone={phone}
-                                code={code}
-                                isSubmitting={isSubmitting}
-                                cooldown={cooldown}
-                                onCodeChange={setCode}
-                                onSubmit={handleVerifyOtp}
-                                onResend={handleSendOtp}
-                                onChangePhone={handleChangePhone}
-                                formatPhone={formatPhone}
-                                formatCooldown={formatCooldown}
-                                variants={pageVariants}
-                            />
-                        )}
-                    </AnimatePresence>
+    //             {/* Content */}
+    //             <div className="flex flex-1 flex-col justify-center pb-16 pt-4">
+    //                 <AnimatePresence mode="wait">
+    //                     {phase === "phone" ? (
+    //                         <PhoneStep
+    //                             key="phone"
+    //                             phone={phone}
+    //                             isSubmitting={isSubmitting}
+    //                             onPhoneChange={(value) =>
+    //                                 setPhone(normalizePhone(value))
+    //                             }
+    //                             onSubmit={handleSendOtp}
+    //                             variants={pageVariants}
+    //                         />
+    //                     ) : (
+    //                         <OtpStep
+    //                             key="otp"
+    //                             phone={phone}
+    //                             code={code}
+    //                             isSubmitting={isSubmitting}
+    //                             cooldown={cooldown}
+    //                             onCodeChange={setCode}
+    //                             onSubmit={handleVerifyOtp}
+    //                             onResend={handleSendOtp}
+    //                             onChangePhone={handleChangePhone}
+    //                             formatPhone={formatPhone}
+    //                             formatCooldown={formatCooldown}
+    //                             variants={pageVariants}
+    //                         />
+    //                     )}
+    //                 </AnimatePresence>
+    //             </div>
+    //         </div>
+    //     </main>
+    // );
+
+    return (
+        <main className="min-h-screen bg-[#F4F6F3]">
+            <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-5 py-6">
+                <div className="flex flex-1 items-center justify-center py-8">
+                    <div className="w-full overflow-hidden rounded-2xl border border-[#DCE3DE] bg-white shadow-[0_8px_30px_rgba(24,61,43,0.08)]">
+                        {/* Green accent */}
+                        <div className="h-1 bg-[#183D2B]" />
+
+                        <div className="px-6 py-6 sm:px-8 sm:py-8">
+                            {/* Header */}
+                            <div className="relative mb-8 flex items-center justify-center">
+                                <BackButton
+                                    className="absolute right-0 top-0"
+                                    onClick={() => router.push("/")}
+                                />
+
+                                <div className="flex size-20 items-center justify-center rounded-2xl border border-[#DCE3DE] bg-[#F8FAF8] p-3">
+                                    <img
+                                        src="/logo.png"
+                                        alt="phfood"
+                                        className="size-full object-contain"
+                                    />
+                                </div>
+                            </div>
+
+                            <AnimatePresence mode="wait">
+                                {phase === "phone" ? (
+                                    <PhoneStep
+                                        key="phone"
+                                        phone={phone}
+                                        isSubmitting={isSubmitting}
+                                        onPhoneChange={(value) =>
+                                            setPhone(normalizePhone(value))
+                                        }
+                                        onSubmit={handleSendOtp}
+                                        variants={pageVariants}
+                                    />
+                                ) : (
+                                    <OtpStep
+                                        key="otp"
+                                        phone={phone}
+                                        code={code}
+                                        isSubmitting={isSubmitting}
+                                        cooldown={cooldown}
+                                        onCodeChange={setCode}
+                                        onSubmit={handleVerifyOtp}
+                                        onResend={handleSendOtp}
+                                        onChangePhone={handleChangePhone}
+                                        formatPhone={formatPhone}
+                                        formatCooldown={formatCooldown}
+                                        variants={pageVariants}
+                                    />
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
     );
+
 }

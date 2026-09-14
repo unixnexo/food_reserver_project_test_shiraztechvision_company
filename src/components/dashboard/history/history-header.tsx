@@ -16,7 +16,7 @@ export function HistoryHeader() {
 
                 <Image
                     src="/logo.png"
-                    alt="وعده"
+                    alt="phfood"
                     width={140}
                     height={50}
                     priority
