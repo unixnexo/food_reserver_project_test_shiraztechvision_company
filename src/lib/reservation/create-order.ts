@@ -115,7 +115,7 @@
 //     // OrderItem (see schema.prisma) is what actually guarantees correctness
 //     // under concurrency; the try/catch below handles that constraint firing.
 //     const existingItemsForChild = await prisma.orderItem.findMany({
-//         where: { childId, date: { in: dates } },
+//         where: { childId, date: { in: dates }, status: "ACTIVE" },
 //     });
 
 //     if (existingItemsForChild.length > 0) {
@@ -138,10 +138,8 @@
 //         };
 //     }
 
-//     // const halfPrice = type === "DAILY" ? pricing.dailyHalfPrice : pricing.monthlyHalfPrice;
-//     // const fullPrice = type === "DAILY" ? pricing.dailyFullPrice : pricing.monthlyFullPrice;
-//     const halfPrice = pricing.halfPortionPrice;
-//     const fullPrice = pricing.fullPortionPrice;
+//     const halfPrice = type === "DAILY" ? pricing.dailyHalfPrice : pricing.monthlyHalfPrice;
+//     const fullPrice = type === "DAILY" ? pricing.dailyFullPrice : pricing.monthlyFullPrice;
 
 //     const itemsWithPrice = items.map((item) => {
 //         const unitPrice = item.portionType === "HALF" ? halfPrice : fullPrice;
@@ -270,10 +268,6 @@
 // }
 
 // class InsufficientWalletBalanceError extends Error { }
-
-
-
-
 
 
 

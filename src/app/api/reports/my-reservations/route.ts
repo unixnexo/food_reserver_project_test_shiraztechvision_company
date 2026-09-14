@@ -74,24 +74,29 @@ export async function GET(request: Request) {
 
     const now = new Date();
 
-    const reservations = orderItems.map((item) => ({
-        orderItemId: item.id,
-        date: item.date.toISOString().split("T")[0],
-        childId: item.childId,
-        childName: `${item.child.firstName} ${item.child.lastName}`,
-        foodName: item.menuItem.food.name,
-        portionType: item.portionType,
-        amount: item.unitPrice,
-        orderId: item.orderId,
-        orderType: item.order.type,
-        orderStatus: item.order.status,
-        itemStatus: item.status,
-        orderPlacedAt: item.order.createdAt.toISOString(),
-        canCancel:
+    const reservations = orderItems.map((item) => {
+        const isModifiable =
             item.status === "ACTIVE" &&
             item.order.status === "PAID" &&
-            canModifyReservationForDate(item.date, now),
-    }));
+            canModifyReservationForDate(item.date, now);
+
+        return {
+            orderItemId: item.id,
+            date: item.date.toISOString().split("T")[0],
+            childId: item.childId,
+            childName: `${item.child.firstName} ${item.child.lastName}`,
+            foodName: item.menuItem.food.name,
+            portionType: item.portionType,
+            amount: item.unitPrice,
+            orderId: item.orderId,
+            orderType: item.order.type,
+            orderStatus: item.order.status,
+            itemStatus: item.status,
+            orderPlacedAt: item.order.createdAt.toISOString(),
+            canCancel: isModifiable,
+            canEdit: isModifiable,
+        };
+    });
 
     return NextResponse.json({
         success: true,
