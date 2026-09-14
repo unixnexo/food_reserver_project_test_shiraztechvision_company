@@ -121,20 +121,25 @@ export default function AdminReportsPage() {
 
     return (
         <div className="mx-auto w-full max-w-6xl">
-            <div className="mb-8">
-                <div className="mb-2 flex items-center gap-3">
-                    <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-[#EAF3ED] text-[#183D2B]">
-                        <ClipboardList className="size-6" />
+
+            <div className="mb-8 overflow-hidden rounded-2xl border border-[#DCE3DE] bg-white shadow-sm">
+                <div className="h-1 bg-[#183D2B]" />
+
+                <div className="flex items-center gap-4 px-5 py-5 sm:px-6">
+                    <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF3ED] text-[#183D2B]">
+                        <ClipboardList className="size-5" />
                     </div>
 
-                    <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                        گزارش‌ها
-                    </h1>
-                </div>
+                    <div>
+                        <h1 className="text-xl font-bold tracking-tight text-[#183D2B] sm:text-2xl">
+                            گزارش‌ها
+                        </h1>
 
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    گزارش کامل سفارش‌های غذای ثبت‌شده در سیستم.
-                </p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            گزارش کامل سفارش‌های غذای ثبت‌شده در سیستم.
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <div className="flex flex-col gap-6">

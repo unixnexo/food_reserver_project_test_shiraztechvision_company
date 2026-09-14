@@ -21,7 +21,7 @@ export default function AdminLayout({
     children: React.ReactNode;
 }) {
     return (
-        <div className="min-h-dvh bg-background">
+        <div className="min-h-dvh bg-[#F4F6F3]">
             {/* Header */}
             <header className="px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8">
                 <div className="mx-auto flex h-[76px] max-w-7xl items-center justify-between rounded-[28px] border border-border/60 bg-background px-4 shadow-sm sm:h-[84px] sm:px-6 lg:px-8">
@@ -41,7 +41,7 @@ export default function AdminLayout({
                             width={140}
                             height={50}
                             priority
-                            className="h-auto w-[100px] object-contain sm:w-[115px]"
+                            className="h-auto w-[45px] sm:w-[50px] object-contain"
                         />
                     </Link>
 

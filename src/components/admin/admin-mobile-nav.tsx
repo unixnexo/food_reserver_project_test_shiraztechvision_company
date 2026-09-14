@@ -54,7 +54,7 @@ export function AdminMobileNav({ items }: AdminMobileNavProps) {
             >
                 <div className="flex h-full flex-col">
                     <SheetHeader className="border-b border-border px-6 pb-6 pt-8 text-right">
-                        <div className="flex items-center justify-between">
+                        {/* <div className="flex items-center justify-between">
                             <SheetTitle className="text-2xl font-bold">
                                 مدیریت وعده
                             </SheetTitle>
@@ -62,7 +62,7 @@ export function AdminMobileNav({ items }: AdminMobileNavProps) {
 
                         <p className="mt-2 text-sm text-muted-foreground">
                             همه‌چیز را از اینجا مدیریت کن.
-                        </p>
+                        </p> */}
                     </SheetHeader>
 
                     <nav className="flex flex-1 flex-col gap-2 px-4 py-6">

@@ -383,24 +383,28 @@ export default function AdminPricingPage() {
 
     return (
         <div className="mx-auto w-full max-w-6xl">
-            <div className="mb-8">
-                <div className="mb-2 flex items-center gap-3">
-                    <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-[#EAF3ED] text-[#183D2B]">
-                        <Tags className="size-6" />
+            <div className="mb-8 overflow-hidden rounded-2xl border border-[#DCE3DE] bg-white shadow-sm">
+                <div className="h-1 bg-[#183D2B]" />
+
+                <div className="flex items-center gap-4 px-5 py-5 sm:px-6">
+                    <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF3ED] text-[#183D2B]">
+                        <Tags className="size-5" />
                     </div>
 
-                    <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                        قیمت‌گذاری
-                    </h1>
-                </div>
+                    <div>
+                        <h1 className="text-xl font-bold tracking-tight text-[#183D2B] sm:text-2xl">
+                            قیمت‌گذاری
+                        </h1>
 
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    قیمت نیم پرس و تمام پرس را برای سفارش‌های روزانه و ماهانه به‌طور جداگانه تنظیم کنید.
-                </p>
+                        <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                            قیمت نیم پرس و تمام پرس را برای سفارش‌های روزانه و ماهانه به‌طور جداگانه تنظیم کنید.
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <div className="grid gap-6 lg:grid-cols-2">
-                <section className="rounded-3xl border border-border/70 bg-background p-5 shadow-sm sm:p-8">
+                <section className="rounded-2xl border border-[#D8DED9] bg-white p-5 shadow-[0_4px_20px_rgba(24,61,43,0.06)] sm:p-8">
                     <div className="mb-8">
                         <h2 className="text-lg font-semibold">قیمت سفارش روزانه</h2>
                         <p className="mt-1 text-sm leading-6 text-muted-foreground">
@@ -449,7 +453,7 @@ export default function AdminPricingPage() {
                 </section>
             </div>
 
-            <div className="mt-6 max-w-2xl">
+            <div className="mt-6">
                 <div className="mb-5 rounded-2xl bg-muted/40 px-4 py-3">
                     <p className="text-xs leading-6 text-muted-foreground">
                         تغییر قیمت فقط روی سفارش‌های جدید اعمال می‌شود و

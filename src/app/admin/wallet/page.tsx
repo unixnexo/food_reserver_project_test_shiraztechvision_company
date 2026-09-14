@@ -147,20 +147,24 @@ export default function AdminWalletPage() {
 
     return (
         <div className="mx-auto w-full max-w-3xl">
-            <div className="mb-8">
-                <div className="mb-2 flex items-center gap-3">
-                    <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-[#EAF3ED] text-[#183D2B]">
-                        <Wallet className="size-6" />
+            <div className="mb-8 overflow-hidden rounded-2xl border border-[#DCE3DE] bg-white shadow-sm">
+                <div className="h-1 bg-[#183D2B]" />
+
+                <div className="flex items-center gap-4 px-5 py-5 sm:px-6">
+                    <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF3ED] text-[#183D2B]">
+                        <Wallet className="size-5" />
                     </div>
 
-                    <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                        کیف پول کاربران
-                    </h1>
-                </div>
+                    <div>
+                        <h1 className="text-xl font-bold tracking-tight text-[#183D2B] sm:text-2xl">
+                            کیف پول کاربران
+                        </h1>
 
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    با جستجوی شماره موبایل والد، می‌توانید موجودی کیف پول او را افزایش یا کاهش دهید.
-                </p>
+                        <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                            با جستجوی شماره موبایل والد، می‌توانید موجودی کیف پول او را افزایش یا کاهش دهید.
+                        </p>
+                    </div>
+                </div>
             </div>
 
             {/* Search */}

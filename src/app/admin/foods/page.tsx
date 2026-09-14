@@ -118,20 +118,24 @@ export default function AdminFoodsPage() {
     return (
         <div className="mx-auto w-full max-w-3xl">
             {/* Page heading */}
-            <div className="mb-8">
-                <div className="mb-2 flex items-center gap-3">
-                    <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-[#EAF3ED] text-[#183D2B]">
-                        <UtensilsCrossed className="size-6" />
+            <div className="mb-8 overflow-hidden rounded-2xl border border-[#DCE3DE] bg-white shadow-sm">
+                <div className="h-1 bg-[#183D2B]" />
+
+                <div className="flex items-center gap-4 px-5 py-5 sm:px-6">
+                    <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF3ED] text-[#183D2B]">
+                        <UtensilsCrossed className="size-5" />
                     </div>
 
-                    <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                        بانک غذا
-                    </h1>
-                </div>
+                    <div>
+                        <h1 className="text-xl font-bold tracking-tight text-[#183D2B] sm:text-2xl">
+                            بانک غذا
+                        </h1>
 
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    غذاهای قابل استفاده در منوهای مدرسه را مدیریت کنید.
-                </p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            غذاهای قابل استفاده در منوهای مدرسه را مدیریت کنید.
+                        </p>
+                    </div>
+                </div>
             </div>
 
             {/* Add food */}
