@@ -37,7 +37,7 @@ export function ReservationDateGroup({
                     <ReservationRow
                         key={reservation.orderItemId}
                         reservation={reservation}
-                        onCancelled={onCancelled}
+                        onChanged={onCancelled}
                     />
                 ))}
             </div>
