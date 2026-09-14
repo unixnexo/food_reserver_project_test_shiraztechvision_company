@@ -10,7 +10,7 @@ const iranSans = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "رزرو غذای مدرسه",
+  title: "رزرو غذای مدرسه | PHfood",
   description: "سامانه رزرو غذای مدرسه برای والدین",
 };
 
@@ -21,6 +21,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       dir="rtl"
       className={`${iranSans.variable} h-full antialiased bg-[#F4F6F3]`}
     >
+      <head>
+        <meta name="apple-mobile-web-app-title" content="PHfood" />
+      </head>
       <body className="min-h-full flex flex-col bg-[#F4F6F3]">
         {children}
         <Toaster position="top-center" />
