@@ -130,6 +130,7 @@ export async function GET(request: Request) {
     ]);
 
     const rows = orderItems.map((item) => ({
+        orderItemId: item.id,
         date: item.date.toISOString().split("T")[0],
         childName: `${item.child.firstName} ${item.child.lastName}`,
         schoolName: item.child.school.name,

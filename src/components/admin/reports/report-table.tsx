@@ -1,6 +1,7 @@
 "use client";
 
-import { Loader2, ReceiptText } from "lucide-react";
+import { useState } from "react";
+import { Loader2, ReceiptText, X } from "lucide-react";
 import {
     Table,
     TableBody,
@@ -9,9 +10,12 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { formatPersianDateString } from "@/lib/date/format-persian-date";
+import { AdminCancelReservationDialog } from "./admin-cancel-reservation-dialog";
 
 type ReportRow = {
+    orderItemId: string;
     date: string;
     childName: string;
     schoolName: string;
@@ -58,9 +62,12 @@ function StatusBadge({ status }: { status: ReportRow["orderStatus"] }) {
 type ReportTableProps = {
     rows: ReportRow[];
     isLoading: boolean;
+    onCancelled: () => void;
 };
 
-export function ReportTable({ rows, isLoading }: ReportTableProps) {
+export function ReportTable({ rows, isLoading, onCancelled }: ReportTableProps) {
+    const [cancelTarget, setCancelTarget] = useState<ReportRow | null>(null);
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center py-16">
@@ -104,7 +111,21 @@ export function ReportTable({ rows, isLoading }: ReportTableProps) {
                                 </p>
                             </div>
 
-                            <StatusBadge status={r.orderStatus} />
+                            <div className="flex shrink-0 items-center gap-1">
+                                <StatusBadge status={r.orderStatus} />
+
+                                {r.itemStatus === "ACTIVE" && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setCancelTarget(r)}
+                                        className="size-8 shrink-0 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                                    >
+                                        <X className="size-4" />
+                                    </Button>
+                                )}
+                            </div>
                         </div>
 
                         <div className="mt-3 grid grid-cols-2 gap-y-2 text-xs">
@@ -168,6 +189,7 @@ export function ReportTable({ rows, isLoading }: ReportTableProps) {
                             <TableHead className="text-right">وضعیت</TableHead>
                             <TableHead className="text-right">موبایل والدین</TableHead>
                             <TableHead className="text-right">زمان ثبت سفارش</TableHead>
+                            <TableHead className="text-right">عملیات</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -198,11 +220,33 @@ export function ReportTable({ rows, isLoading }: ReportTableProps) {
                                 <TableCell className="whitespace-nowrap">
                                     {formatPersianDateString(r.orderPlacedAt)}
                                 </TableCell>
+                                <TableCell>
+                                    {r.itemStatus === "ACTIVE" && (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => setCancelTarget(r)}
+                                            className="size-9 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                                        >
+                                            <X className="size-4" />
+                                        </Button>
+                                    )}
+                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
                 </Table>
             </div>
+
+            <AdminCancelReservationDialog
+                orderItemId={cancelTarget?.orderItemId ?? null}
+                childName={cancelTarget?.childName ?? ""}
+                foodName={cancelTarget?.foodName ?? ""}
+                amount={cancelTarget?.orderStatus === "PAID" ? (cancelTarget?.amount ?? 0) : 0}
+                onClose={() => setCancelTarget(null)}
+                onCancelled={onCancelled}
+            />
         </>
     );
 }
