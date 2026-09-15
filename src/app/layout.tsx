@@ -10,7 +10,7 @@ const iranSans = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "رزرو غذای مدرسه | PHfood",
+  title: "رزرو غذای مدرسه | PH Food",
   description: "سامانه رزرو غذای مدرسه برای والدین",
 };
 
