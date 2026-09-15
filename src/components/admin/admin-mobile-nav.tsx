@@ -43,7 +43,7 @@ export function AdminMobileNav({ items }: AdminMobileNavProps) {
 
             <SheetTrigger
                 aria-label="باز کردن منو"
-                className="flex size-11 items-center justify-center rounded-full border border-border bg-background transition-colors hover:bg-muted active:scale-95 lg:hidden"
+                className="flex size-11 items-center justify-center rounded-full border border-border bg-background transition-colors hover:bg-muted active:scale-95 xl:hidden"
             >
                 <Menu className="size-5" />
             </SheetTrigger>

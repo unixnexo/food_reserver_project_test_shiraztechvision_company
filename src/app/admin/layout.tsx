@@ -91,7 +91,7 @@ const NAV_ITEMS = [
     { href: "/admin", label: "گزارش‌ها" },
     { href: "/admin/kitchen-report", label: "گزارش آشپزخانه" },
     { href: "/admin/foods", label: "بانک غذا" },
-    { href: "/admin/sides", label: "ضمیمه‌ها" },
+    { href: "/admin/sides", label: "پاسفره‌ای" },
     { href: "/admin/schools", label: "مدرسه‌ها" },
     { href: "/admin/menu", label: "تعریف منو" },
     { href: "/admin/closed-days", label: "روزهای تعطیل" },
@@ -110,14 +110,14 @@ export default function AdminLayout({
             <header className="px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8 print:hidden">
                 <div className="mx-auto flex h-[76px] max-w-7xl items-center justify-between rounded-[28px] border border-border/60 bg-background px-4 shadow-sm sm:h-[84px] sm:px-6 lg:px-8">
                     {/* Mobile menu */}
-                    <div className="lg:hidden block">
+                    <div className="xl:hidden block">
                         <AdminMobileNav items={NAV_ITEMS} />
                     </div>
 
                     {/* Logo */}
                     <Link
                         href="/admin"
-                        className="absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0"
+                        className="absolute left-1/2 -translate-x-1/2 lg:static xl:translate-x-0"
                     >
                         <Image
                             src="/logo.png"

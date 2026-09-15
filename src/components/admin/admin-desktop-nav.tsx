@@ -17,7 +17,7 @@ export function AdminDesktopNav({ items }: AdminDesktopNavProps) {
     const pathname = usePathname();
 
     return (
-        <nav className="hidden items-center gap-1 lg:flex">
+        <nav className="hidden items-center gap-1 xl:flex">
             {items.map((item) => {
                 const isActive =
                     item.href === "/admin"
