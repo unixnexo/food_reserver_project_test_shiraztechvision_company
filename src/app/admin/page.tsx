@@ -19,6 +19,7 @@ type ReportRow = {
     portionType: "HALF" | "FULL";
     amount: number;
     note: string | null;
+    sideNames: string[];
     orderId: string;
     orderType: "DAILY" | "MONTHLY";
     orderStatus: "PENDING" | "PAID" | "FAILED" | "CANCELLED";
