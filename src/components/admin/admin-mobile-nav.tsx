@@ -52,20 +52,11 @@ export function AdminMobileNav({ items }: AdminMobileNavProps) {
                 side="right"
                 className="w-[85%] max-w-sm border-l-0 p-0 sm:w-[380px]"
             >
-                <div className="flex h-full flex-col">
-                    <SheetHeader className="border-b border-border px-6 pb-6 pt-8 text-right">
-                        {/* <div className="flex items-center justify-between">
-                            <SheetTitle className="text-2xl font-bold">
-                                مدیریت وعده
-                            </SheetTitle>
-                        </div>
-
-                        <p className="mt-2 text-sm text-muted-foreground">
-                            همه‌چیز را از اینجا مدیریت کن.
-                        </p> */}
+                <div className="flex h-full min-h-0 flex-col">
+                    <SheetHeader className="shrink-0 border-b border-border px-6 pb-6 pt-8 text-right">
                     </SheetHeader>
 
-                    <nav className="flex flex-1 flex-col gap-2 px-4 py-6">
+                    <nav className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
                         {items.map((item, index) => {
                             const isActive =
                                 item.href === "/admin"
@@ -82,6 +73,7 @@ export function AdminMobileNav({ items }: AdminMobileNavProps) {
                                         duration: 0.3,
                                         ease: "easeOut",
                                     }}
+                                    className="mb-2"
                                 >
                                     <Link
                                         href={item.href}
@@ -92,7 +84,6 @@ export function AdminMobileNav({ items }: AdminMobileNavProps) {
                                             }`}
                                     >
                                         <span>{item.label}</span>
-
                                         <ChevronLeft className="size-5" />
                                     </Link>
                                 </motion.div>
@@ -100,7 +91,7 @@ export function AdminMobileNav({ items }: AdminMobileNavProps) {
                         })}
                     </nav>
 
-                    <div className="border-t border-border p-4">
+                    <div className="shrink-0 border-t border-border p-4">
                         <LogoutButton variant="menu" />
                     </div>
                 </div>
