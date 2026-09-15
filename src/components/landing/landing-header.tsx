@@ -46,10 +46,10 @@ export function LandingHeader() {
                         className="h-auto w-[50px] object-contain sm:w-[58px]"
                     />
 
-                    <span className="font-black tracking-[-0.04em] text-[#183D2B]">
+                    {/* <span className="font-black tracking-[-0.04em] text-[#183D2B]">
                         <span className="text-2xl sm:text-3xl">PH</span>
                         <span className="text-lg sm:text-xl">food</span>
-                    </span>
+                    </span> */}
                 </Link>
 
                 {/* Navigation */}
