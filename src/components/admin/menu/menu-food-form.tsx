@@ -70,12 +70,15 @@ export function MenuFoodForm({
                     role="combobox"
                     aria-expanded={open}
                     disabled={isSubmitting || foods.length === 0}
-                    className="h-12 w-full min-h-12 flex-1 justify-between rounded-2xl border border-border/70 bg-background px-4 text-sm font-normal shadow-none"
+                    className="flex h-12 min-h-12 w-full flex-1 items-center justify-between gap-2 rounded-xl border border-[#D5DCD7] bg-[#F8FAF8] px-4 text-sm font-normal shadow-none"
                 >
-                    {selectedFood?.name ??
-                        (foods.length === 0
-                            ? "غذای جدیدی برای افزودن وجود ندارد"
-                            : "انتخاب غذا")}
+                    <span className="truncate">
+                        {selectedFood?.name ??
+                            (foods.length === 0
+                                ? "غذای جدیدی برای افزودن وجود ندارد"
+                                : "انتخاب غذا")}
+                    </span>
+
                     <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
                 </PopoverTrigger>
 
