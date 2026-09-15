@@ -44,6 +44,7 @@
 //     date: Date;
 //     menuItemId: string;
 //     portionType: "HALF" | "FULL";
+//     note?: string;
 // };
 
 // export type CreateOrderResult =
@@ -149,6 +150,7 @@
 //             menuItemId: item.menuItemId,
 //             portionType: item.portionType,
 //             unitPrice,
+//             note: item.note?.trim() || null,
 //         };
 //     });
 
@@ -278,6 +280,7 @@
 
 
 
+
 // src/lib/reservation/create-order.ts
 //
 // Shared core logic for creating a reservation order — used by BOTH the
@@ -325,6 +328,7 @@ export type OrderItemInput = {
     menuItemId: string;
     portionType: "HALF" | "FULL";
     note?: string;
+    sideIds?: string[];
 };
 
 export type CreateOrderResult =
@@ -410,6 +414,24 @@ export async function createOrder(
         };
     }
 
+    // Validate any provided side/topping IDs actually exist — sides are
+    // free-form optional add-ons, not tied to a specific date, so this
+    // check is a flat existence check across all items' sideIds at once.
+    const allSideIds = Array.from(
+        new Set(items.flatMap((item) => item.sideIds ?? []))
+    );
+    if (allSideIds.length > 0) {
+        const existingSides = await prisma.side.findMany({
+            where: { id: { in: allSideIds } },
+            select: { id: true },
+        });
+        const existingSideIdSet = new Set(existingSides.map((s) => s.id));
+        const missingSideId = allSideIds.find((id) => !existingSideIdSet.has(id));
+        if (missingSideId) {
+            return { ok: false, error: "یکی از ضمیمه‌های انتخاب شده یافت نشد", status: 404 };
+        }
+    }
+
     const pricing = await prisma.portionPricing.findFirst();
     if (!pricing) {
         return {
@@ -431,6 +453,9 @@ export async function createOrder(
             portionType: item.portionType,
             unitPrice,
             note: item.note?.trim() || null,
+            sides: item.sideIds?.length
+                ? { create: item.sideIds.map((sideId) => ({ sideId })) }
+                : undefined,
         };
     });
 
@@ -550,3 +575,4 @@ export async function createOrder(
 }
 
 class InsufficientWalletBalanceError extends Error { }
+

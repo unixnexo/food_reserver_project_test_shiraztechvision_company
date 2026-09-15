@@ -23,6 +23,7 @@
 //     foodName: string;
 //     portionType: "HALF" | "FULL";
 //     amount: number;
+//     note: string | null;
 //     orderId: string;
 //     orderType: "DAILY" | "MONTHLY";
 //     orderStatus: "PENDING" | "PAID" | "FAILED" | "CANCELLED";
@@ -259,11 +260,6 @@
 
 
 
-
-
-
-
-
 "use client";
 
 import { useState } from "react";
@@ -290,6 +286,7 @@ type ReportRow = {
     portionType: "HALF" | "FULL";
     amount: number;
     note: string | null;
+    sideNames: string[];
     orderId: string;
     orderType: "DAILY" | "MONTHLY";
     orderStatus: "PENDING" | "PAID" | "FAILED" | "CANCELLED";
@@ -405,7 +402,15 @@ export function ReportTable({ rows, isLoading, onCancelled }: ReportTableProps) 
 
                             <div>
                                 <p className="text-muted-foreground">غذا</p>
-                                <p className="mt-0.5 font-medium">{r.foodName}</p>
+                                <p className="mt-0.5 font-medium">
+                                    {r.foodName}
+                                    {r.sideNames.length > 0 && (
+                                        <span className="font-normal text-muted-foreground">
+                                            {" "}
+                                            + {r.sideNames.join("، ")}
+                                        </span>
+                                    )}
+                                </p>
                             </div>
 
                             <div>
@@ -468,7 +473,14 @@ export function ReportTable({ rows, isLoading, onCancelled }: ReportTableProps) 
                                 <TableCell>{r.childName}</TableCell>
                                 <TableCell>{r.schoolName}</TableCell>
                                 <TableCell>{r.gradeName}</TableCell>
-                                <TableCell>{r.foodName}</TableCell>
+                                <TableCell>
+                                    {r.foodName}
+                                    {r.sideNames.length > 0 && (
+                                        <div className="text-xs text-muted-foreground">
+                                            + {r.sideNames.join("، ")}
+                                        </div>
+                                    )}
+                                </TableCell>
                                 <TableCell>
                                     {r.portionType === "HALF" ? "نیم پرس" : "تمام پرس"}
                                 </TableCell>

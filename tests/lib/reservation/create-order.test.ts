@@ -32,6 +32,7 @@ vi.mock("@/lib/prisma", () => ({
         order: { create: vi.fn() },
         user: { findUnique: vi.fn(), update: vi.fn() },
         walletTransaction: { create: vi.fn() },
+        side: { findMany: vi.fn() },
         $transaction: vi.fn(),
     },
 }));
@@ -302,5 +303,80 @@ describe("createOrder — WALLET payment", () => {
 
         expect(result.ok).toBe(false);
         if (!result.ok) expect(result.status).toBe(400);
+    });
+});
+
+describe("createOrder — sides/toppings", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mockDefaults();
+    });
+
+    const validItems = [
+        { date: VALID_DATE, menuItemId: MENU_ITEM_ID, portionType: "FULL" as const },
+    ];
+
+    it("succeeds and includes a nested sides create when valid sideIds are given", async () => {
+        (prisma.side.findMany as any).mockResolvedValue([
+            { id: "side-1" },
+            { id: "side-2" },
+        ]);
+
+        const items = [
+            {
+                date: VALID_DATE,
+                menuItemId: MENU_ITEM_ID,
+                portionType: "FULL" as const,
+                sideIds: ["side-1", "side-2"],
+            },
+        ];
+
+        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, items, NOW);
+
+        expect(result.ok).toBe(true);
+        expect(prisma.order.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: expect.objectContaining({
+                    items: {
+                        create: [
+                            expect.objectContaining({
+                                sides: {
+                                    create: [
+                                        { sideId: "side-1" },
+                                        { sideId: "side-2" },
+                                    ],
+                                },
+                            }),
+                        ],
+                    },
+                }),
+            })
+        );
+    });
+
+    it("rejects with a 404 when a sideId does not exist", async () => {
+        (prisma.side.findMany as any).mockResolvedValue([{ id: "side-1" }]);
+
+        const items = [
+            {
+                date: VALID_DATE,
+                menuItemId: MENU_ITEM_ID,
+                portionType: "FULL" as const,
+                sideIds: ["side-1", "side-does-not-exist"],
+            },
+        ];
+
+        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, items, NOW);
+
+        expect(result.ok).toBe(false);
+        if (!result.ok) expect(result.status).toBe(404);
+        expect(prisma.order.create).not.toHaveBeenCalled();
+    });
+
+    it("does not query sides at all when no item has sideIds", async () => {
+        const result = await createOrder(PARENT_ID, "DAILY", CHILD_ID, validItems, NOW);
+
+        expect(result.ok).toBe(true);
+        expect(prisma.side.findMany).not.toHaveBeenCalled();
     });
 });

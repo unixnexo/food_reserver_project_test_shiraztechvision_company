@@ -30,6 +30,7 @@
 //     menuItemId: string | null;
 //     portionType: PortionType | null;
 //     availableMenuItems: MenuItem[] | null;
+//     note?: string;
 // };
 
 // type Phase = "child" | "food" | "summary";
@@ -166,6 +167,12 @@
 //         );
 //     }
 
+//     function updateDayNote(date: string, note: string) {
+//         setDaySelections((prev) =>
+//             prev.map((ds) => (ds.date === date ? { ...ds, note } : ds))
+//         );
+//     }
+
 //     function goToSummary() {
 //         const incomplete = daySelections.some(
 //             (ds) => !ds.menuItemId || !ds.portionType
@@ -203,6 +210,7 @@
 //                         date: ds.date,
 //                         menuItemId: ds.menuItemId,
 //                         portionType: ds.portionType,
+//                         note: ds.note?.trim() || undefined,
 //                     })),
 //                     paymentMethod,
 //                 }),
@@ -244,63 +252,26 @@
 //     );
 
 //     return (
-//         // <div className="min-h-dvh bg-[#F7F5F0]">
-//         //     <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col px-4 py-6 sm:px-6 sm:py-10">
-//         //         <div className="mb-6 flex items-center gap-4">
-//         //             <BackButton
-//         //                 onClick={
-//         //                     phase === "child"
-//         //                         ? undefined
-//         //                         : () => {
-//         //                             if (phase === "food") setPhase("child");
-//         //                             else if (phase === "summary") setPhase("food");
-//         //                         }
-//         //                 }
-//         //             />
-
-//         //             <div className="flex items-center gap-3">
-//         //                 <h1 className="text-lg font-bold sm:text-xl">رزرو غذای ماهانه</h1>
-//         //             </div>
-//         //         </div>
-
-//         //         <ReservationProgress steps={STEPS} currentIndex={currentStepIndex} />
-
-
-//         <div className="min-h-dvh bg-[#F4F6F3]">
+//         <div className="min-h-dvh bg-[#F7F5F0]">
 //             <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col px-4 py-6 sm:px-6 sm:py-10">
-//                 {/* Header */}
-//                 <div className="mb-6 overflow-hidden rounded-2xl border border-[#DCE3DE] bg-white shadow-sm">
-//                     <div className="h-1 bg-[#183D2B]" />
+//                 <div className="mb-6 flex items-center gap-4">
+//                     <BackButton
+//                         onClick={
+//                             phase === "child"
+//                                 ? undefined
+//                                 : () => {
+//                                     if (phase === "food") setPhase("child");
+//                                     else if (phase === "summary") setPhase("food");
+//                                 }
+//                         }
+//                     />
 
-//                     <div className="flex items-center gap-4 px-5 py-5 sm:px-6">
-//                         <BackButton
-//                             className="size-11 shrink-0 rounded-xl"
-//                             onClick={
-//                                 phase === "child"
-//                                     ? undefined
-//                                     : () => {
-//                                         if (phase === "food") setPhase("child");
-//                                         else if (phase === "summary") setPhase("food");
-//                                     }
-//                             }
-//                         />
-
-//                         <div>
-//                             <h1 className="text-xl font-bold tracking-tight text-[#183D2B] sm:text-2xl">
-//                                 رزرو غذای ماهانه
-//                             </h1>
-
-//                             <p className="mt-1 text-sm text-muted-foreground">
-//                                 غذای فرزندت را برای روزهای ماه از قبل رزرو کن.
-//                             </p>
-//                         </div>
+//                     <div className="flex items-center gap-3">
+//                         <h1 className="text-lg font-bold sm:text-xl">رزرو غذای ماهانه</h1>
 //                     </div>
 //                 </div>
 
-//                 <ReservationProgress
-//                     steps={STEPS}
-//                     currentIndex={currentStepIndex}
-//                 />
+//                 <ReservationProgress steps={STEPS} currentIndex={currentStepIndex} />
 
 //                 <div className="flex-1">
 //                     {phase === "child" && (
@@ -337,6 +308,7 @@
 //                                         onSelect={(menuItemId, portionType) =>
 //                                             updateDaySelection(ds.date, menuItemId, portionType)
 //                                         }
+//                                         onNoteChange={(note) => updateDayNote(ds.date, note)}
 //                                     />
 //                                 ))}
 //                             </div>
@@ -404,16 +376,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
 "use client";
 
 import { useState, useEffect, Suspense, useRef } from "react";
@@ -447,6 +409,7 @@ type DaySelection = {
     portionType: PortionType | null;
     availableMenuItems: MenuItem[] | null;
     note?: string;
+    sideIds?: string[];
 };
 
 type Phase = "child" | "food" | "summary";
@@ -478,6 +441,7 @@ function MonthlyReservationInner() {
     const [isLoadingDays, setIsLoadingDays] = useState(false);
     const [walletBalance, setWalletBalance] = useState<number | null>(null);
     const [paymentMethod, setPaymentMethod] = useState<"GATEWAY" | "WALLET">("GATEWAY");
+    const [sides, setSides] = useState<{ id: string; name: string }[]>([]);
 
     const hasAutoStarted = useRef(false);
 
@@ -497,6 +461,10 @@ function MonthlyReservationInner() {
         fetch("/api/wallet/balance")
             .then((res) => res.json())
             .then((data) => data.success && setWalletBalance(data.balance));
+
+        fetch("/api/sides")
+            .then((res) => res.json())
+            .then((data) => data.success && setSides(data.sides));
     }, []);
 
     useEffect(() => {
@@ -589,6 +557,12 @@ function MonthlyReservationInner() {
         );
     }
 
+    function updateDaySideIds(date: string, sideIds: string[]) {
+        setDaySelections((prev) =>
+            prev.map((ds) => (ds.date === date ? { ...ds, sideIds } : ds))
+        );
+    }
+
     function goToSummary() {
         const incomplete = daySelections.some(
             (ds) => !ds.menuItemId || !ds.portionType
@@ -627,6 +601,7 @@ function MonthlyReservationInner() {
                         menuItemId: ds.menuItemId,
                         portionType: ds.portionType,
                         note: ds.note?.trim() || undefined,
+                        sideIds: ds.sideIds?.length ? ds.sideIds : undefined,
                     })),
                     paymentMethod,
                 }),
@@ -721,10 +696,14 @@ function MonthlyReservationInner() {
                                         key={ds.date}
                                         selection={ds}
                                         pricing={pricing}
+                                        sides={sides}
                                         onSelect={(menuItemId, portionType) =>
                                             updateDaySelection(ds.date, menuItemId, portionType)
                                         }
                                         onNoteChange={(note) => updateDayNote(ds.date, note)}
+                                        onSideIdsChange={(sideIds) =>
+                                            updateDaySideIds(ds.date, sideIds)
+                                        }
                                     />
                                 ))}
                             </div>
@@ -783,3 +762,5 @@ export default function MonthlyReservationPage() {
         </Suspense>
     );
 }
+
+
